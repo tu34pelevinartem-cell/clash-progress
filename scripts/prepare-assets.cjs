@@ -65,6 +65,16 @@ async function main() {
     }
     fs.mkdirSync(path.join(output, 'assets'), { recursive: true });
     for (const file of publicFiles) fs.copyFileSync(path.join(root, file), path.join(output, file));
+    // Each deployment names its own JS/CSS versions so a cached older script
+    // cannot be combined with the new navigation or feature markup.
+    let html = fs.readFileSync(path.join(output, 'index.html'), 'utf8');
+    for (const file of publicFiles.filter(file => /\.(js|css)$/.test(file))) {
+      const digest = crypto.createHash('sha256').update(fs.readFileSync(path.join(output, file))).digest('hex').slice(0, 12);
+      for (const attribute of ['src', 'href']) {
+        html = html.split(`${attribute}="${file}"`).join(`${attribute}="${file}?v=${digest}"`);
+      }
+    }
+    fs.writeFileSync(path.join(output, 'index.html'), html);
     fs.writeFileSync(path.join(output, 'upgrades.json'), databaseBytes);
     let count = 0;
     function copyImage(source, destination) {
