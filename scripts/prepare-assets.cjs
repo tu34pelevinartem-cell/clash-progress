@@ -19,7 +19,7 @@ function option(flag) {
 }
 const archiveOption = option('--archive');
 const output = path.resolve(option('--output') || path.join(root, '_site'));
-const publicFiles = ['coach-engine.js', 'coach-ui.js', 'coach.css', 'coach-data.json', 'index.html', 'theme.css', 'dashboard.js', 'engine.js', 'DATA-LICENSE.txt', '.nojekyll'];
+const publicFiles = ['planner-ui.js', 'planner.css', 'walls.js', 'walls.css', 'coach-engine.js', 'coach-ui.js', 'coach.css', 'coach-data.json', 'index.html', 'theme.css', 'dashboard.js', 'engine.js', 'DATA-LICENSE.txt', '.nojekyll'];
 function filesBelow(directory) {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
     const file = path.join(directory, entry.name);
