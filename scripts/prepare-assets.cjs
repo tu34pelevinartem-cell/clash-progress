@@ -19,7 +19,7 @@ function option(flag) {
 }
 const archiveOption = option('--archive');
 const output = path.resolve(option('--output') || path.join(root, '_site'));
-const publicFiles = ['planner-ui.js', 'planner.css', 'walls.js', 'walls.css', 'coach-engine.js', 'coach-ui.js', 'coach.css', 'coach-data.json', 'index.html', 'theme.css', 'dashboard.js', 'engine.js', 'DATA-LICENSE.txt', '.nojekyll'];
+const publicFiles = ['equipment-ui.js', 'equipment.css', 'equipment-data.json', 'details-ui.js', 'details.css', 'planner-ui.js', 'planner.css', 'walls.js', 'walls.css', 'coach-engine.js', 'coach-ui.js', 'coach.css', 'coach-data.json', 'index.html', 'theme.css', 'dashboard.js', 'engine.js', 'DATA-LICENSE.txt', '.nojekyll'];
 function filesBelow(directory) {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
     const file = path.join(directory, entry.name);
@@ -96,6 +96,7 @@ async function main() {
         }
       }
     }
+    for (const ore of ['shiny-ore', 'glowy-ore', 'starry-ore']) copyImage(`images/other/ore/${ore}.png`, `assets/${ore}.png`);
     const license = fs.readFileSync(path.join(packageRoot, 'LICENSE'));
     if (!license.equals(fs.readFileSync(path.join(root, 'DATA-LICENSE.txt')))) throw new Error('Pinned package license differs from the checked-in license.');
     console.log(`Prepared ${database.entities.length} entities and ${count} images in ${output}`);
