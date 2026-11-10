@@ -38,7 +38,8 @@ function cards(rows,ctx){
     const known=row.supported!==false&&Number.isFinite(row.max)&&row.max>0;
     const pct=known?Math.min(100,Math.max(0,(row.level||0)/row.max*100)):0;
     const details=meta.get(row.data)||{};
-    const image=row.d?.image&&/^assets\/[a-zA-Z0-9_./-]+\.png$/.test(row.d.image)?`<img src="${esc(row.d.image)}" alt="" width="64" height="64" loading="lazy">`:'<span aria-hidden="true">✧</span>';
+    const imagePath=ClashArt.image(row.d,row.level);
+    const image=imagePath?`<img src="${esc(imagePath)}" alt="" width="64" height="64" loading="lazy">`:'<span aria-hidden="true">✧</span>';
     const done=known&&row.done;
     return`<button class="eq-card${done?' eq-card-done':''}${details.rarity==='Epic'?' eq-card-epic':''}" data-equipment-detail="${esc(row.key)}" aria-label="${esc(title(row,ctx))}, уровень ${row.level??'неизвестен'}${known?' из '+row.max:''}">
       <span class="eq-card-art">${image}</span>

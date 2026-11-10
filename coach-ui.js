@@ -27,7 +27,7 @@ const ClashCoachUI = (() => {
   }
   function image(item, context, className = '') {
     const entity = context.db?.find(entry => entry.id === item.id && entry.base === 'home');
-    const path = item.image || entity?.image;
+    const path = ClashArt.image(entity, item.level ?? item.current);
     return path ? `<img class="${safe(className)}" src="${safe(path)}" alt="${safe(item.name || entity?.name || 'Игровой объект')}" loading="lazy">` : '<span class="coach-unit-placeholder" aria-hidden="true">◈</span>';
   }
   function list(items, className = '') {
