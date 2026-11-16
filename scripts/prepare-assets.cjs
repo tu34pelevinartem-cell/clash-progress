@@ -5,7 +5,7 @@ const crypto = require('node:crypto');
 const zlib = require('node:zlib');
 const { execFileSync } = require('node:child_process');
 
-// No npm install or package scripts: only verified JSON and PNG assets are used.
+// No npm install or package scripts: only verified JSON, PNG and WebP assets are used.
 const VERSION = '0.19.1';
 const ARCHIVE_URL = `https://registry.npmjs.org/clash-of-clans-data/-/clash-of-clans-data-${VERSION}.tgz`;
 const INTEGRITY = 'sha512-STHiiofY0UIQwI31RZwx/6jzXTrnMF09CRoVkex+QDdrlE4agcmlSG6Zhaf+/Eul9kv9VYwquTWs7ZzCnfRExw==';
@@ -153,7 +153,7 @@ async function main() {
     if (!/^[a-f0-9]{40}$/.test(artworkManifest.commit)) throw new Error('Invalid release artwork commit');
     for (let offset = 0; offset < artworkManifest.files.length; offset += 6) {
       await Promise.all(artworkManifest.files.slice(offset, offset + 6).map(async item => {
-        if (!/^assets\/[a-zA-Z0-9_/-]+\.webp$/.test(item.path) || item.path.includes('..') || !/^assets\/release-[a-z0-9-]+\.webp$/.test(item.destination)) throw new Error('Invalid release artwork path');
+        if (!/^assets\/[a-zA-Z0-9_/'-]+\.webp$/.test(item.path) || item.path.includes('..') || !/^assets\/release-[a-z0-9-]+\.webp$/.test(item.destination)) throw new Error('Invalid release artwork path');
         let bytes;
         if (releaseArtDirectory) bytes = fs.readFileSync(path.join(path.resolve(releaseArtDirectory), path.basename(item.destination)));
         else {
