@@ -56,6 +56,31 @@ const ClashNewContentUI=(()=>{
   function catalogLevels(item){
     return Array.isArray(item.levels)?item.levels.filter(level=>level&&Number.isInteger(level.level)&&level.level>0).slice().sort((a,b)=>a.level-b.level):[];
   }
+  function planningState(item,ctx){
+    const definitions=Array.isArray(ctx.db)?ctx.db:ctx.databaseInfo?.entities||[];
+    const imported=(ctx.snapshot?.rows||[]).filter(row=>row.base==='home'&&(Number.isInteger(item.id)&&row.data===item.id||definitions.find(d=>d.id===row.data&&d.base==='home')?.slug===item.slug));
+    const importedCount=imported.reduce((sum,row)=>sum+(row.count||1),0);
+    const limit=Math.max(0,(Number.isInteger(item.count)?Math.min(20,item.count):1)-importedCount);
+    const target=ctx.result?.target??ctx.target??(ctx.settings?.mode==='maximum'?Math.max(19,...definitions.filter(d=>d.slug==='town-hall').flatMap(d=>d.levels.map(l=>l.level))):currentHall(ctx));
+    const levels=Array.isArray(ctx.newContentPlan?.[item.slug]?.levels)?ctx.newContentPlan[item.slug].levels:[];
+    return{limit,importedCount,target,levels};
+  }
+  function planControls(item,ctx,esc){
+    if(typeof ctx.onPlanChange!=='function')return'';
+    const state=planningState(item,ctx),locked=Number.isInteger(item.th)&&state.target<item.th;
+    if(!state.limit)return`<p class="new-content-plan-linked">Уже учтено из JSON: ${state.importedCount}. Повторно в план не добавляется.</p>`;
+    if(locked)return`<p class="new-content-plan-linked">Для планирования выбери цель от ТХ${item.th}.</p>`;
+    const maximum=Number.isInteger(item.maxLevel)?Math.min(100,item.maxLevel):0;
+    const current=(ctx.result?.rows||[]).filter(row=>row.manualPlan&&row.planSlug===item.slug);
+    return`<fieldset class="new-content-plan"><legend>Добавить в свой прогноз</legend><p>Выбери текущий уровень каждого объекта. «Не построено» добавит всю цепочку улучшений.</p>${Array.from({length:state.limit},(_,slot)=>{
+      const selected=Number.isInteger(state.levels[slot])?String(state.levels[slot]):'';
+      return`<label><span>${state.limit>1?'Объект '+(slot+1):'Сейчас'}</span><select data-new-plan-slug="${esc(item.slug)}" data-new-plan-slot="${slot}" aria-label="${esc(item.titleRu||item.name)}, ${state.limit>1?'объект '+(slot+1):'текущий уровень'}"><option value=""${selected===''?' selected':''}>Не учитывать</option>${Array.from({length:maximum+1},(_,level)=>{
+        const requirement=level===0?item.th:catalogLevels(item).find(row=>row.level===level)?.th??(item.slug==='squad-barracks'?level+7:item.th);
+        const unavailable=Number.isInteger(requirement)&&Number.isInteger(state.target)&&requirement>state.target;
+        return`<option value="${level}"${selected===String(level)?' selected':''}${unavailable?' disabled':''}>${level===0?'Не построено · ур. 0':'Уровень '+level}${unavailable?' · с ТХ'+requirement:''}</option>`;
+      }).join('')}</select></label>`;
+    }).join('')}${state.importedCount?`<small>В JSON уже распознано ${state.importedCount}; здесь только дополнительные объекты.</small>`:''}${current.length?`<div class="new-content-plan-result">В прогнозе: ${current.length} · ${current.every(row=>row.timeComplete)?time(current.reduce((sum,row)=>sum+row.time,0),ctx)+' суммарно':'срок известен частично'}</div>`:''}<small>Уровни JSON не меняются. После нового импорта проверь ручной план.</small></fieldset>`;
+  }
   function levelTable(levels,item,ctx,esc,hall){
     if(!levels.length)return'';
     return`<div class="new-content-level-wrap"><table class="new-content-levels"><caption>Уровни и улучшения</caption><thead><tr><th scope="col">Ур.</th><th scope="col">Стоимость</th><th scope="col">Время</th><th scope="col">ТХ</th></tr></thead><tbody>${levels.map(level=>{
@@ -75,13 +100,25 @@ const ClashNewContentUI=(()=>{
       const summaryCaption=firstLevel?'Уровень 1':item.category==='spell'?'Получение':'Постройка';
       const th=Number.isInteger(item.th)&&item.th>0?(locked?'Откроется с ТХ':'С ТХ')+' '+item.th:'ТХ уточняется';
       const facts=[Number.isInteger(item.count)&&item.count>0?`До ${item.count} в деревне`:'',Number.isInteger(item.maxLevel)&&item.maxLevel>0?`Максимальный уровень ${item.maxLevel}`:''].filter(Boolean);
-      return`<details class="new-content-card${locked?' new-content-locked':''}" data-new-content="${esc(item.slug||item.name)}" data-new-content-locked="${locked}"><summary><span class="new-content-art">${asset?`<img src="${esc(asset)}" alt="" loading="lazy" width="58" height="58">`:icon(item.icon)}</span><span class="new-content-main"><span class="new-content-title">${esc(title)}</span>${title!==item.name?`<span class="new-content-english">${esc(item.name)}</span>`:''}<span class="new-content-th">${locked?'<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 7V5a3 3 0 0 1 6 0v2M4 7h8v7H4z"/></svg>':''}${esc(th)}</span></span><span class="new-content-chevron" aria-hidden="true">⌄</span><span class="new-content-cost"><span class="new-content-level-caption">${summaryCaption}</span><span>Стоимость<strong>${esc(price(summaryPrice,summaryResource))}</strong></span><span>Время<strong>${esc(time(summaryTime,ctx))}</strong></span></span></summary><div class="new-content-details"><p>${esc(item.description||'Подробности появятся после уточнения данных обновления.')}</p>${facts.length?`<div class="new-content-facts">${facts.map(fact=>`<span>${esc(fact)}</span>`).join('')}</div>`:''}${levelTable(levels,item,ctx,esc,hall)}<a href="${esc(source)}" target="_blank" rel="noopener noreferrer">Подробнее об обновлении <span aria-hidden="true">↗</span></a></div></details>`;
+      return`<details class="new-content-card${locked?' new-content-locked':''}" data-new-content="${esc(item.slug||item.name)}" data-new-content-locked="${locked}"><summary><span class="new-content-art">${asset?`<img src="${esc(asset)}" alt="" loading="lazy" width="58" height="58">`:icon(item.icon)}</span><span class="new-content-main"><span class="new-content-title">${esc(title)}</span>${title!==item.name?`<span class="new-content-english">${esc(item.name)}</span>`:''}<span class="new-content-th">${locked?'<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 7V5a3 3 0 0 1 6 0v2M4 7h8v7H4z"/></svg>':''}${esc(th)}</span></span><span class="new-content-chevron" aria-hidden="true">⌄</span><span class="new-content-cost"><span class="new-content-level-caption">${summaryCaption}</span><span>Стоимость<strong>${esc(price(summaryPrice,summaryResource))}</strong></span><span>Время<strong>${esc(time(summaryTime,ctx))}</strong></span></span></summary><div class="new-content-details"><p>${esc(item.description||'Подробности появятся после уточнения данных обновления.')}</p>${facts.length?`<div class="new-content-facts">${facts.map(fact=>`<span>${esc(fact)}</span>`).join('')}</div>`:''}${levelTable(levels,item,ctx,esc,hall)}${planControls(item,ctx,esc)}<a href="${esc(source)}" target="_blank" rel="noopener noreferrer">Подробнее об обновлении <span aria-hidden="true">↗</span></a></div></details>`;
     }).join('');
-    return`<section class="new-content-panel" id="new-content-${esc(page)}" aria-label="Новое в обновлении"><div class="new-content-heading"><div><span class="new-content-kicker">ОБНОВЛЕНИЕ ТХ19</span><h3>Новое в обновлении</h3></div><span class="new-content-catalog">Каталог новинок · ${entries.length}</span></div><div class="new-content-grid">${cards}</div><p class="new-content-origin">Новые объекты пока показаны в справочнике и не входят в персональный прогноз. Их распознавание в экспорте ещё уточняется.</p></section>`;
+    return`<section class="new-content-panel" id="new-content-${esc(page)}" aria-label="Новое в обновлении"><div class="new-content-heading"><div><span class="new-content-kicker">ОБНОВЛЕНИЕ ТХ19</span><h3>Новое в обновлении</h3></div><span class="new-content-catalog">Каталог новинок · ${entries.length}</span></div><div class="new-content-grid">${cards}</div><p class="new-content-origin">${typeof ctx.onPlanChange==="function"?"Укажи уровни новинок, чтобы добавить их в общий прогноз. Ручной план хранится отдельно от снимка и не меняет фактический прогресс.":"Новые объекты пока показаны в справочнике и не входят в персональный прогноз. Их распознавание в экспорте ещё уточняется."}</p></section>`;
   }
-  // Native details/summary keeps the catalog usable without extra event handlers.
-  function mount(){return;}
-  return{render,mount,rows};
+  function mount(ctx){
+    if(typeof ctx.onPlanChange!=='function')return;
+    document.querySelectorAll('[data-new-plan-slug]').forEach(input=>input.addEventListener('change',()=>{
+      const slug=input.dataset.newPlanSlug,entry=rows(ctx).find(row=>row.slug===slug);if(!entry)return;
+      const state=planningState(entry,ctx);
+      const levels=Array.from({length:state.limit},(_,slot)=>Number.isInteger(state.levels[slot])?state.levels[slot]:null);
+      const slot=Number(input.dataset.newPlanSlot),value=input.value===''?null:Number(input.value);
+      if(!Number.isInteger(slot)||slot<0||slot>=state.limit||value!==null&&(!Number.isInteger(value)||value<0||value>(entry.maxLevel||0)))return;
+      levels[slot]=value;
+      const opened=[...document.querySelectorAll('[data-new-content][open]')].map(node=>node.dataset.newContent);
+      ctx.onPlanChange({[slug]:{levels}});
+      document.querySelectorAll('[data-new-content]').forEach(node=>{if(opened.includes(node.dataset.newContent))node.open=true;});
+    }));
+  }
+  return{render,mount,rows,planningState};
 })();
 if(typeof window!=='undefined')window.ClashNewContentUI=ClashNewContentUI;
 if(typeof module!=='undefined')module.exports=ClashNewContentUI;

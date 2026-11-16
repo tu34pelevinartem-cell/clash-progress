@@ -6,8 +6,8 @@ function hall(snapshot,base){return snapshot.rows.find(r=>r.data===(base==='home
 function entity(db,id,base){return db.find(d=>d.id===id&&d.base===base)}
 function cap(d,db,target,mode='current'){if(!d)return null;if(mode==='maximum')return Math.max(...d.levels.map(l=>l.level));function gate(slug){const x=db.find(x=>x.slug===slug&&x.base===d.base);return Math.max(0,...(x?.levels||[]).filter(l=>(l.th??l.bh??0)<=target).map(l=>l.level))}return Math.max(0,...d.levels.filter(l=>{if(d.slug==='town-hall'||d.slug==='builder-hall')return l.level<=target;if((l.th??l.bh??0)>target)return false;if(l.heroHall!==undefined&&l.heroHall>gate('hero-hall'))return false;if(l.lab!==undefined&&l.lab>gate(d.base==='home'?'laboratory':'star-laboratory'))return false;if(l.pet!==undefined&&l.pet>gate('pet-house'))return false;if(l.blacksmith!==undefined&&l.blacksmith>gate('blacksmith'))return false;return true}).map(l=>l.level))}
 const knownNumber=value=>typeof value==='number'&&Number.isFinite(value)&&value>=0;
-function describe(row,db,target,mode,boost=0,now=Date.now()){
- const d=entity(db,row.data,row.base),max=cap(d,db,target,mode);
+function describe(row,db,target,mode,boost=0,now=Date.now(),planDefinition=null){
+ const d=planDefinition||entity(db,row.data,row.base),max=cap(d,db,target,mode);
  const absent=row.group==='equipment'&&row.level===0;
  const levelKnown=Number.isInteger(row.level)&&row.level>=0&&!!d&&(row.level===0||d.levels.some(l=>l.level===row.level));
  const supported=!!d&&levelKnown&&max!==null&&max>0;
@@ -47,21 +47,47 @@ function describe(row,db,target,mode,boost=0,now=Date.now()){
   done:!absent&&supported&&levels.length===0&&row.level>=top};
 }
 function allocate(chains,n){const slots=Array(Math.max(1,n)).fill(0);for(const t of [...chains].sort((a,b)=>b-a)){const min=Math.min(...slots);slots[slots.indexOf(min)]+=t}return Math.max(0,...slots)}
-function forecast(snapshot,db,{base='home',mode='current',builders=6,boost=0,now=Date.now()}={}){
+function newContentRows(snapshot,db,catalog,plan,{base='home',mode='current',target,boost=0,now=Date.now()}={}){
+ if(base!=='home'||!Array.isArray(catalog)||!plan||typeof plan!=='object')return[];
+ const output=[],seen=new Set();
+ for(const item of catalog){
+  if(!item||typeof item.slug!=='string'||seen.has(item.slug))continue;seen.add(item.slug);
+  const selection=plan[item.slug],maximum=Number.isInteger(item.maxLevel)&&item.maxLevel>0?Math.min(100,item.maxLevel):0;
+  if(!maximum||!Array.isArray(selection?.levels))continue;
+  const imported=snapshot.rows.filter(row=>row.base==='home'&&(Number.isInteger(item.id)&&row.data===item.id||entity(db,row.data,'home')?.slug===item.slug));
+  const importedCount=imported.reduce((sum,row)=>sum+row.count,0),limit=Math.max(0,(Number.isInteger(item.count)?Math.min(20,item.count):1)-importedCount);
+  const levels=Array.from({length:maximum},(_,index)=>{
+   const n=index+1,known=(item.levels||[]).find(level=>level.level===n);
+   return known?{...known}:{level:n,cost:null,time:null,resource:item.resource||'',th:item.slug==='squad-barracks'?n+7:item.th,status:'unknown'};
+  });
+  const definition={...item,base:'home',name:item.titleRu||item.name,levels};
+  if(!cap(definition,db,target,mode))continue;
+  let accepted=0;
+  for(const [slot,current]of selection.levels.slice(0,limit).entries()){
+   // A missing value means "not included". Zero is an explicit unbuilt item.
+   if(!Number.isInteger(current)||current<0||current>maximum||accepted>=limit)continue;
+   accepted++;
+   const row={key:'new-content:'+item.slug+':'+slot,group:item.category==='spell'?'spells':'buildings',label:'План новинок',base:'home',data:null,level:current,count:1,end:null,types:null,manualPlan:true,planSlug:item.slug,planSlot:slot};
+   output.push(describe(row,db,target,mode,boost,now,definition));
+  }
+ }
+ return output;
+}
+function forecast(snapshot,db,{base='home',mode='current',builders=6,boost=0,now=Date.now(),newContentCatalog=[],newContentPlan={}}={}){
  const target=mode==='current'?hall(snapshot,base):Math.max(...db.filter(d=>d.base===base&&['town-hall','builder-hall'].includes(d.slug)).flatMap(d=>d.levels.map(l=>l.level)));
- const rows=snapshot.rows.filter(r=>r.base===base).map(r=>describe(r,db,target,mode,boost,now));
+ const rows=[...snapshot.rows.filter(r=>r.base===base).map(r=>describe(r,db,target,mode,boost,now)),...newContentRows(snapshot,db,newContentCatalog,newContentPlan,{base,mode,target,boost,now})];
  const buildChains=[],labChains=[],petChains=[],costs={},ore=[0,0,0];let total=0,remaining=0,known=0,upgrades=0;
- for(const r of rows){if(!r.modeled)continue;known+=r.count;total+=r.fullTime*r.count;remaining+=r.time*r.count;upgrades+=r.levels.length*r.count;
+ for(const r of rows){if(!r.modeled)continue;known+=r.count;if(!r.manualPlan){total+=r.fullTime*r.count;remaining+=r.time*r.count;}upgrades+=r.levels.length*r.count;
   for(const[key,value]of Object.entries(r.costs))costs[key]=(costs[key]||0)+value*r.count;r.ore.forEach((v,i)=>ore[i]+=v*r.count);
   const queue=['units','units2','spells','siege_machines'].includes(r.group)?labChains:r.group==='pets'?petChains:buildChains;
   if(r.group!=='equipment'&&r.d.category!=='wall')for(let k=0;k<r.count;k++)queue.push(r.time);
  }
  const building=allocate(buildChains,builders),lab=labChains.reduce((a,b)=>a+b,0),pets=petChains.reduce((a,b)=>a+b,0),time=Math.max(building,lab,pets);
  const percent=total?Math.max(0,Math.min(100,(total-remaining)/total*100)):0,excluded=rows.filter(r=>!r.modeled);
- const relevant=rows.filter(r=>!r.absent&&!r.scopeExcluded),timeComplete=relevant.every(r=>r.timeComplete),costComplete=relevant.every(r=>r.costComplete),progressComplete=relevant.every(r=>r.progressComplete);
+ const relevant=rows.filter(r=>!r.absent&&!r.scopeExcluded),timeComplete=relevant.every(r=>r.timeComplete),costComplete=relevant.every(r=>r.costComplete),progressComplete=relevant.filter(r=>!r.manualPlan).every(r=>r.progressComplete);
  const dataGaps=relevant.flatMap(r=>r.dataGaps);
  return{target,rows,building,lab,pets,time,percent,costs,ore,upgrades,known,excluded,timeComplete,costComplete,progressComplete,completeData:timeComplete&&costComplete&&progressComplete,dataGaps,
-  rawBuilder:buildChains.reduce((a,b)=>a+b,0),maxed:rows.filter(r=>r.done).reduce((s,r)=>s+r.count,0),objects:rows.reduce((s,r)=>s+r.count,0)};
+  rawBuilder:buildChains.reduce((a,b)=>a+b,0),maxed:rows.filter(r=>!r.manualPlan&&r.done).reduce((s,r)=>s+r.count,0),objects:rows.filter(r=>!r.manualPlan).reduce((s,r)=>s+r.count,0),plannedObjects:rows.filter(r=>r.manualPlan).reduce((s,r)=>s+r.count,0)};
 }
 // Acceleration scenarios keep snapshot progress separate from predicted dates.
 const HOUR=3600,DAY=86400,EPS=1e-6;
@@ -93,7 +119,7 @@ function scenarioChains(rows){
    const work=row.tasks[levelIndex];
    const expectedLevel=levelIndex?row.levels[levelIndex-1].level+1:Math.max(row.level+1,Math.min(...row.d.levels.map(l=>l.level)));
    if(level.level!==expectedLevel||!knownNumber(work))break;
-   tasks.push({work,raw:knownNumber(level.time)?level.time:work,active:Number.isFinite(row.end)&&levelIndex===0,
+   tasks.push({work,raw:knownNumber(level.time)?level.time:work,active:Number.isFinite(row.end)&&levelIndex===0,progressEligible:!row.manualPlan,
     eligible:/^(Gold|Elixir|Dark Elixir)$/.test(level.resource||''),clock:row.data===1000039});
   }
   if(!tasks.length)continue;
@@ -191,7 +217,7 @@ function simulate(chains,count,kind,boosts,{clock=null,goldFactor=1}={}){
    const helping=slot===helperSlot&&time<helperEnd-EPS?helper:0;
    const work=Math.min(slot.remaining,(normalRate+helping)*dt);
    // Only the extra work produced by a consumed potion advances equivalent progress.
-   potionWork+=Math.min(work,extra*dt)/Math.max(.01,slot.factor);
+   if(slot.current.progressEligible!==false)potionWork+=Math.min(work,extra*dt)/Math.max(.01,slot.factor);
    slot.remaining=Math.max(0,slot.remaining-work);
   }
   time=next;
@@ -221,7 +247,7 @@ function scenario(snapshot,db,options={}){
  const queueSavings={},potionQueueSavings={};for(const key of['building','lab','pets']){
   queueSavings[key]=Math.max(0,baseline[key]-accelerated[key]);potionQueueSavings[key]=Math.max(0,withoutPotions[key]-accelerated[key]);
  }
- const full=reference.rows.filter(row=>row.modeled).reduce((sum,row)=>sum+row.fullTime*row.count,0);
+ const full=reference.rows.filter(row=>row.modeled&&!row.manualPlan).reduce((sum,row)=>sum+row.fullTime*row.count,0);
  const actualPercent=reference.percent,rawPotionWork=Object.values(accelerated.potionWorkSaved).reduce((sum,value)=>sum+value,0);
  const equivalentDelta=full?Math.min(100-actualPercent,rawPotionWork/full*100):0;
  const assumptions=[
@@ -234,10 +260,11 @@ function scenario(snapshot,db,options={}){
  if(normalized.apprenticeLevel||normalized.labAssistantLevel)assumptions.push('Помощники готовы в начале, работают час каждые 23 часа на одном улучшении. При досрочном завершении остаток часа не переносится; зелья не умножают их скорость.');
  if(base==='builder'&&(normalized.clockTowerDaily||normalized.clockPotions))assumptions.push('Часовая башня предполагается готовой в начале или после текущего улучшения: 10× на '+clockMinutes(normalized.clockTowerLevel)+' мин., затем 22 ч перерыва. Зелье добавляет 30 мин.; во время улучшения самой башни ускорение недоступно. Для будущих включений сохранён выбранный уровень.');
  if(!baseline.completeData)assumptions.push('Данные части уровней неполные. Срок и стоимость показывают известную часть; после улучшения с неизвестным временем сценарий цепочки не рассчитывается.');
+ if(baseline.plannedObjects)assumptions.push('В прогноз добавлен ручной план новых объектов. Он хранится отдельно от JSON и не меняет фактический прогресс деревни. Уже распознанные в снимке постройки не добавляются повторно.');
  return{baseline,accelerated:{...baseline,...accelerated,percent:actualPercent},withoutPotions:{...baseline,...withoutPotions,percent:actualPercent},
   savedSeconds:Math.max(0,baseline.time-accelerated.time),potionSavedSeconds:Math.max(0,withoutPotions.time-accelerated.time),
   queueSavings,potionQueueSavings,potionWorkSaved:accelerated.potionWorkSaved,actualPercent,projectedPercent:actualPercent+equivalentDelta,equivalentDelta,normalized,assumptions,
   timeComplete:baseline.timeComplete,costComplete:baseline.costComplete,progressComplete:baseline.progressComplete,completeData:baseline.completeData,dataGaps:baseline.dataGaps};
 }
-return{parse,hall,entity,cap,describe,allocate,forecast,groups,normalizeBoosts,helperLevels,clockMinutes,scenario};})();
+return{parse,hall,entity,cap,describe,allocate,forecast,newContentRows,groups,normalizeBoosts,helperLevels,clockMinutes,scenario};})();
 if(typeof module!=='undefined')module.exports=ClashEngine;
