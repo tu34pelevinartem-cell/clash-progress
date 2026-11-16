@@ -7,9 +7,12 @@ const ClashDetailUI=(()=>{
     const {esc,name,art,duration}=ctx;
     const resourceNames={...ctx.resourceNames,'Gold or Elixir':'Золото или эликсир','Builder Gold or Builder Elixir':'Золото или эликсир строителя','Gems':'Кристаллы'};
     const title=name(row),equipment=row.group==='equipment';
+    const presence=equipment&&row.exportedLevel===1?`<div class="detail-presence-choice"><p>Уровень 1 в JSON не подтверждает получение предмета. Укажи его наличие для этого аккаунта.</p><div role="group" aria-label="Наличие снаряжения">${[['owned','Есть, уровень 1'],['absent','Нет на аккаунте']].map(([value,label])=>`<button type="button" data-equipment-presence="${value}" data-equipment-id="${esc(row.data)}" aria-pressed="${value==='owned'?row.owned===true:row.absent===true}">${label}</button>`).join('')}</div></div>`:'';
     if(equipment&&(row.absent||row.owned===false||row.level===0)){
       const absent=row.absent||row.level===0;
-      return`<div class="dialog-head"><div><div class="eyebrow">СНАРЯЖЕНИЕ ГЕРОЯ</div><h2>${esc(title)}</h2></div><button id="detail-close" aria-label="Закрыть">×</button></div><div class="detail-object detail-object-equipment detail-object-absent"><div class="detail-art">${art(row)}</div><div class="detail-level-block"><div class="detail-presence-label">${absent?'Нет на аккаунте':'Нет данных в JSON'}</div><div class="detail-summary"><div>Сейчас<strong>${absent?'0':'—'}</strong></div></div></div></div><p class="detail-absence-note">${absent?'Предмет отсутствует в импортированном снаряжении. После его получения обнови JSON — появятся уровень и стоимость дальнейших улучшений.':'В этом экспорте не указан уровень предмета. Импортируй свежие данные из игры, чтобы увидеть его состояние.'}</p>`;
+      const label=absent?'Нет на аккаунте':row.ownershipUnknown?'Наличие не подтверждено':'Нет данных в JSON';
+      const note=row.ownershipUnknown?'Подтверди наличие предмета — тогда он войдёт в расчёт руды.':absent?(row.exportedLevel===1?'Ты отметил, что этого предмета нет на аккаунте. Он не входит в расчёт руды.':'Предмет отсутствует в импортированном снаряжении. После его получения обнови JSON — появятся уровень и стоимость дальнейших улучшений.'):'В этом экспорте не указан уровень предмета. Импортируй свежие данные из игры, чтобы увидеть его состояние.';
+      return`<div class="dialog-head"><div><div class="eyebrow">СНАРЯЖЕНИЕ ГЕРОЯ</div><h2>${esc(title)}</h2></div><button id="detail-close" aria-label="Закрыть">×</button></div><div class="detail-object detail-object-equipment detail-object-absent${row.ownershipUnknown?' detail-object-unknown':''}"><div class="detail-art">${art(row)}</div><div class="detail-level-block"><div class="detail-presence-label">${label}</div><div class="detail-summary"><div>Сейчас<strong>${absent?'0':'—'}</strong></div></div></div></div><p class="detail-absence-note">${note}</p>${presence}`;
     }
     const levels=Array.isArray(row.levels)?row.levels:[];
     const tasks=Array.isArray(row.tasks)?row.tasks:[];
@@ -37,7 +40,7 @@ const ClashDetailUI=(()=>{
     return`<div class="dialog-head"><div><div class="eyebrow">${esc(row.label)}</div><h2>${esc(title)} ${count}</h2></div><button id="detail-close" aria-label="Закрыть">×</button></div>
       <div class="detail-object${equipment?' detail-object-equipment':''}"><div class="detail-art">${art(row)}</div><div class="detail-level-block"><div class="detail-summary"><div>Сейчас<strong>${row.level??'Модули'}</strong></div><div>Цель<strong>${row.supported?row.max:'?'}</strong></div>${!instant?`<div>До цели${perItem}<strong>${row.modeled&&timeComplete?(done?'Максимум':time(row.time)):'Нет данных'}</strong></div>`:''}</div>${row.supported?budget:''}</div></div>
       ${row.end&&!instant?`<p class="note">${row.expired?'Таймер истёк. Обнови JSON для подтверждения уровня.':'Текущее улучшение: '+duration((row.end-Date.now())/1000)+' осталось.'}</p>`:''}
-      ${row.supported?table:'<p class="note">Расчёт стоимости для выбранной цели пока недоступен.</p>'}${row.supported&&!complete?'<p class="detail-pending-note">Для выбранной цели ещё нет всех цен или сроков улучшений.</p>':''}`;
+      ${row.supported?table:'<p class="note">Расчёт стоимости для выбранной цели пока недоступен.</p>'}${row.supported&&!complete?'<p class="detail-pending-note">Для выбранной цели ещё нет всех цен или сроков улучшений.</p>':''}${presence}`;
   }
   return{render};
 })();
