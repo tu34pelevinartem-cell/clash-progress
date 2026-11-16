@@ -5,9 +5,64 @@ function parse(text){let raw=JSON.parse(text);if(typeof raw==='string')raw=JSON.
 function hall(snapshot,base){return snapshot.rows.find(r=>r.data===(base==='home'?1000001:1000034))?.level||1}
 function entity(db,id,base){return db.find(d=>d.id===id&&d.base===base)}
 function cap(d,db,target,mode='current'){if(!d)return null;if(mode==='maximum')return Math.max(...d.levels.map(l=>l.level));function gate(slug){const x=db.find(x=>x.slug===slug&&x.base===d.base);return Math.max(0,...(x?.levels||[]).filter(l=>(l.th??l.bh??0)<=target).map(l=>l.level))}return Math.max(0,...d.levels.filter(l=>{if(d.slug==='town-hall'||d.slug==='builder-hall')return l.level<=target;if((l.th??l.bh??0)>target)return false;if(l.heroHall!==undefined&&l.heroHall>gate('hero-hall'))return false;if(l.lab!==undefined&&l.lab>gate(d.base==='home'?'laboratory':'star-laboratory'))return false;if(l.pet!==undefined&&l.pet>gate('pet-house'))return false;if(l.blacksmith!==undefined&&l.blacksmith>gate('blacksmith'))return false;return true}).map(l=>l.level))}
-function describe(row,db,target,mode,boost=0,now=Date.now()){const d=entity(db,row.data,row.base);const max=cap(d,db,target,mode);const supported=!!d&&row.level!==null&&max!==null&&max>0;const top=Math.max(row.level||0,max||0);let levels=supported?d.levels.filter(l=>l.level>row.level&&l.level<=top):[];const costs={},ore=[0,0,0];for(const [index,l] of levels.entries()){if(row.end!==null&&index===0)continue;if(l.resource)costs[l.resource]=(costs[l.resource]||0)+l.cost;for(let i=0;i<3;i++)ore[i]+=(l.ore?.[i]||0)}let tasks=levels.map(l=>l.time*(1-boost/100));const hasTimer=row.end!==null;if(hasTimer&&levels.length)tasks[0]=Math.max(0,(row.end-now)/1000);const futureTime=tasks.reduce((s,t)=>s+t,0);const fullTime=supported?d.levels.filter(l=>l.level<=top).reduce((s,l)=>s+l.time*(1-boost/100),0):0;const modeled=supported&&!['helpers'].includes(row.group)&&d.category!=='guardian'&&(d.category!=='other'||d.slug==='clock-tower')&&!row.types;return{...row,d,max:top,cap:max,supported,modeled,levels,tasks,time:futureTime,costs,ore,fullTime,active:hasTimer&&row.end>now,expired:hasTimer&&row.end<=now,done:supported&&row.level>=top}}
+const knownNumber=value=>typeof value==='number'&&Number.isFinite(value)&&value>=0;
+function describe(row,db,target,mode,boost=0,now=Date.now()){
+ const d=entity(db,row.data,row.base),max=cap(d,db,target,mode);
+ const absent=row.group==='equipment'&&row.level===0;
+ const levelKnown=Number.isInteger(row.level)&&row.level>=0&&!!d&&(row.level===0||d.levels.some(l=>l.level===row.level));
+ const supported=!!d&&levelKnown&&max!==null&&max>0;
+ // The imported level is a fact, even if the selected goal or dataset is lower.
+ const top=Math.max(row.level??0,max??0);
+ const scopeExcluded=row.group==='helpers'||!!row.types||!!d&&(d.category==='guardian'||d.category==='other'&&d.slug!=='clock-tower');
+ const modeled=supported&&!absent&&!scopeExcluded;
+ const levels=supported&&!absent?d.levels.filter(l=>l.level>row.level&&l.level<=top).sort((a,b)=>a.level-b.level):[];
+ const costs={},ore=[0,0,0],dataGaps=[];
+ const gap=(kind,level=null)=>dataGaps.push({key:row.key,data:row.data,kind,level});
+ if(!absent&&!scopeExcluded){if(!d)gap('entity');else if(!levelKnown)gap('current-level',row.level);else if(!supported)gap('target');}
+ let costComplete=supported||absent||scopeExcluded,timeComplete=costComplete;
+ // Builder Base troops and the Battle Copter are acquired above level one.
+ const firstLevel=d?.levels.length?Math.min(...d.levels.map(l=>l.level)):1;
+ const nextLevel=Math.max((row.level??top)+1,firstLevel),expected=Math.max(0,top-nextLevel+1);
+ if(modeled&&(levels.length!==expected||levels.some((level,index)=>level.level!==nextLevel+index))){gap('level-sequence');costComplete=false;timeComplete=false;}
+ const hasTimer=row.end!==null&&Number.isFinite(row.end);
+ const tasks=levels.map((level,index)=>{
+  const active=hasTimer&&index===0&&level.level===row.level+1;
+  const time=active?Math.max(0,(row.end-now)/1000):knownNumber(level.time)?level.time*(1-boost/100):null;
+  if(time===null){timeComplete=false;gap('time',level.level);}
+  if(active)return time; // Its resource cost was already paid in the game.
+  const oreKnown=d.category!=='hero-equipment'||Array.isArray(level.ore)&&level.ore.length===3&&level.ore.every(knownNumber);
+  if(!knownNumber(level.cost)||!oreKnown){costComplete=false;gap('cost',level.level);}
+  if(level.resource&&knownNumber(level.cost))costs[level.resource]=(costs[level.resource]||0)+level.cost;
+  for(let i=0;i<3;i++)if(knownNumber(level.ore?.[i]))ore[i]+=level.ore[i];
+  return time;
+ });
+ const history=supported&&!absent?d.levels.filter(l=>l.level<=top).sort((a,b)=>a.level-b.level):[];
+ const progressComplete=absent||scopeExcluded||supported&&history.length===top-firstLevel+1&&history.every((l,index)=>l.level===firstLevel+index&&knownNumber(l.time));
+ if(modeled&&!progressComplete)gap('progress-basis');
+ const futureTime=tasks.reduce((sum,time)=>sum+(knownNumber(time)?time:0),0);
+ const fullTime=history.reduce((sum,l)=>sum+(knownNumber(l.time)?l.time*(1-boost/100):0),0);
+ const completeData=timeComplete&&costComplete&&progressComplete;
+ return{...row,d,max:top,cap:max,supported,modeled,absent,scopeExcluded,levels,tasks,time:futureTime,costs,ore,fullTime,
+  timeComplete,costComplete,progressComplete,completeData,dataGaps,active:hasTimer&&row.end>now,expired:hasTimer&&row.end<=now,
+  done:!absent&&supported&&levels.length===0&&row.level>=top};
+}
 function allocate(chains,n){const slots=Array(Math.max(1,n)).fill(0);for(const t of [...chains].sort((a,b)=>b-a)){const min=Math.min(...slots);slots[slots.indexOf(min)]+=t}return Math.max(0,...slots)}
-function forecast(snapshot,db,{base='home',mode='current',builders=6,boost=0,now=Date.now()}={}){const target=mode==='current'?hall(snapshot,base):Math.max(...db.filter(d=>d.base===base&&['town-hall','builder-hall'].includes(d.slug)).flatMap(d=>d.levels.map(l=>l.level)));const rows=snapshot.rows.filter(r=>r.base===base).map(r=>describe(r,db,target,mode,boost,now));const buildChains=[],labChains=[],petChains=[],costs={},ore=[0,0,0];let total=0,remaining=0,known=0,upgrades=0;for(const r of rows){if(!r.modeled)continue;known+=r.count;total+=r.fullTime*r.count;remaining+=r.time*r.count;upgrades+=r.levels.length*r.count;for(const [key,v]of Object.entries(r.costs))costs[key]=(costs[key]||0)+v*r.count;r.ore.forEach((v,i)=>ore[i]+=v*r.count);const queue=['units','units2','spells','siege_machines'].includes(r.group)?labChains:r.group==='pets'?petChains:buildChains;if(r.group!=='equipment'&&r.d.category!=='wall')for(let k=0;k<r.count;k++)queue.push(r.time)}const building=allocate(buildChains,builders),lab=labChains.reduce((a,b)=>a+b,0),pets=petChains.reduce((a,b)=>a+b,0),time=Math.max(building,lab,pets),percent=total?Math.max(0,Math.min(100,(total-remaining)/total*100)):0;const excluded=rows.filter(r=>!r.modeled);return{target,rows,building,lab,pets,time,percent,costs,ore,upgrades,known,excluded,rawBuilder:buildChains.reduce((a,b)=>a+b,0),maxed:rows.filter(r=>r.done).reduce((s,r)=>s+r.count,0),objects:rows.reduce((s,r)=>s+r.count,0)}}
+function forecast(snapshot,db,{base='home',mode='current',builders=6,boost=0,now=Date.now()}={}){
+ const target=mode==='current'?hall(snapshot,base):Math.max(...db.filter(d=>d.base===base&&['town-hall','builder-hall'].includes(d.slug)).flatMap(d=>d.levels.map(l=>l.level)));
+ const rows=snapshot.rows.filter(r=>r.base===base).map(r=>describe(r,db,target,mode,boost,now));
+ const buildChains=[],labChains=[],petChains=[],costs={},ore=[0,0,0];let total=0,remaining=0,known=0,upgrades=0;
+ for(const r of rows){if(!r.modeled)continue;known+=r.count;total+=r.fullTime*r.count;remaining+=r.time*r.count;upgrades+=r.levels.length*r.count;
+  for(const[key,value]of Object.entries(r.costs))costs[key]=(costs[key]||0)+value*r.count;r.ore.forEach((v,i)=>ore[i]+=v*r.count);
+  const queue=['units','units2','spells','siege_machines'].includes(r.group)?labChains:r.group==='pets'?petChains:buildChains;
+  if(r.group!=='equipment'&&r.d.category!=='wall')for(let k=0;k<r.count;k++)queue.push(r.time);
+ }
+ const building=allocate(buildChains,builders),lab=labChains.reduce((a,b)=>a+b,0),pets=petChains.reduce((a,b)=>a+b,0),time=Math.max(building,lab,pets);
+ const percent=total?Math.max(0,Math.min(100,(total-remaining)/total*100)):0,excluded=rows.filter(r=>!r.modeled);
+ const relevant=rows.filter(r=>!r.absent&&!r.scopeExcluded),timeComplete=relevant.every(r=>r.timeComplete),costComplete=relevant.every(r=>r.costComplete),progressComplete=relevant.every(r=>r.progressComplete);
+ const dataGaps=relevant.flatMap(r=>r.dataGaps);
+ return{target,rows,building,lab,pets,time,percent,costs,ore,upgrades,known,excluded,timeComplete,costComplete,progressComplete,completeData:timeComplete&&costComplete&&progressComplete,dataGaps,
+  rawBuilder:buildChains.reduce((a,b)=>a+b,0),maxed:rows.filter(r=>r.done).reduce((s,r)=>s+r.count,0),objects:rows.reduce((s,r)=>s+r.count,0)};
+}
 // Acceleration scenarios keep snapshot progress separate from predicted dates.
 const HOUR=3600,DAY=86400,EPS=1e-6;
 const bounded=(value,min,max,fallback=0)=>Number.isFinite(Number(value))?Math.max(min,Math.min(max,Number(value))):fallback;
@@ -31,8 +86,17 @@ function scenarioChains(rows){
  const out={building:[],lab:[],pets:[]};let size=0;
  for(const row of rows){
   if(!row.modeled||row.group==='equipment'||row.d.category==='wall'||!row.levels.length)continue;
-  const tasks=row.levels.map((level,index)=>({work:row.tasks[index],raw:level.time,active:row.end!==null&&index===0,
-   eligible:/^(Gold|Elixir|Dark Elixir)$/.test(level.resource||''),clock:row.data===1000039}));
+  const tasks=[];
+  // An unknown mandatory upgrade blocks the following levels in this chain.
+  // Known work after it must not receive a potion/event before it can start.
+  for(const[levelIndex,level]of row.levels.entries()){
+   const work=row.tasks[levelIndex];
+   const expectedLevel=levelIndex?row.levels[levelIndex-1].level+1:Math.max(row.level+1,Math.min(...row.d.levels.map(l=>l.level)));
+   if(level.level!==expectedLevel||!knownNumber(work))break;
+   tasks.push({work,raw:knownNumber(level.time)?level.time:work,active:Number.isFinite(row.end)&&levelIndex===0,
+    eligible:/^(Gold|Elixir|Dark Elixir)$/.test(level.resource||''),clock:row.data===1000039});
+  }
+  if(!tasks.length)continue;
   for(let k=0;k<row.count;k++){
    size+=tasks.length;if(size>200000)throw Error('Слишком много улучшений для сценария.');
    out[queueOf(row)].push({tasks,total:tasks.reduce((sum,task)=>sum+task.work,0),active:tasks[0]?.active&&tasks[0].work>EPS});
@@ -169,9 +233,11 @@ function scenario(snapshot,db,options={}){
  ];
  if(normalized.apprenticeLevel||normalized.labAssistantLevel)assumptions.push('Помощники готовы в начале, работают час каждые 23 часа на одном улучшении. При досрочном завершении остаток часа не переносится; зелья не умножают их скорость.');
  if(base==='builder'&&(normalized.clockTowerDaily||normalized.clockPotions))assumptions.push('Часовая башня предполагается готовой в начале или после текущего улучшения: 10× на '+clockMinutes(normalized.clockTowerLevel)+' мин., затем 22 ч перерыва. Зелье добавляет 30 мин.; во время улучшения самой башни ускорение недоступно. Для будущих включений сохранён выбранный уровень.');
+ if(!baseline.completeData)assumptions.push('Данные части уровней неполные. Срок и стоимость показывают известную часть; после улучшения с неизвестным временем сценарий цепочки не рассчитывается.');
  return{baseline,accelerated:{...baseline,...accelerated,percent:actualPercent},withoutPotions:{...baseline,...withoutPotions,percent:actualPercent},
   savedSeconds:Math.max(0,baseline.time-accelerated.time),potionSavedSeconds:Math.max(0,withoutPotions.time-accelerated.time),
-  queueSavings,potionQueueSavings,potionWorkSaved:accelerated.potionWorkSaved,actualPercent,projectedPercent:actualPercent+equivalentDelta,equivalentDelta,normalized,assumptions};
+  queueSavings,potionQueueSavings,potionWorkSaved:accelerated.potionWorkSaved,actualPercent,projectedPercent:actualPercent+equivalentDelta,equivalentDelta,normalized,assumptions,
+  timeComplete:baseline.timeComplete,costComplete:baseline.costComplete,progressComplete:baseline.progressComplete,completeData:baseline.completeData,dataGaps:baseline.dataGaps};
 }
 return{parse,hall,entity,cap,describe,allocate,forecast,groups,normalizeBoosts,helperLevels,clockMinutes,scenario};})();
 if(typeof module!=='undefined')module.exports=ClashEngine;

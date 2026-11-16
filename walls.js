@@ -37,25 +37,50 @@
       if (!Number.isInteger(row.level) || row.level < 0) { unknownSections += count; continue; }
       byLevel.set(row.level, (byLevel.get(row.level) || 0) + count);
     }
+    const topDefinition = levels.find(level => level.level === targetLevel);
+    const targetLimit = Number.isInteger(topDefinition?.maxCount) && topDefinition.maxCount >= 0 ? topDefinition.maxCount : null;
+    const alreadyAtTarget = [...byLevel].reduce((sum, [current, count]) => sum + (current >= targetLevel && targetLevel > 0 ? count : 0), 0);
+    let slotsLeft = targetLimit === null ? Infinity : Math.max(0, targetLimit - alreadyAtTarget);
+    let cappedSections = 0, assignedToTarget = alreadyAtTarget;
+    const assignments = [];
+    // Use the closest existing sections first. Existing top-level walls consume
+    // the same quota; a lower group retains all upgrades up to the previous level.
+    for (const [currentLevel, count] of [...byLevel].sort((a, b) => b[0] - a[0])) {
+      if (targetLimit === null || currentLevel >= targetLevel || targetLevel <= 1) {
+        assignments.push({ currentLevel, count, targetLevel });
+        continue;
+      }
+      const toTop = Math.min(count, slotsLeft);
+      if (toTop) { assignments.push({ currentLevel, count: toTop, targetLevel }); slotsLeft -= toTop; assignedToTarget += toTop; }
+      if (toTop < count) { assignments.push({ currentLevel, count: count - toTop, targetLevel: targetLevel - 1, capped: true }); cappedSections += count - toTop; }
+    }
     let completedSections = 0, remainingSections = 0, upgradeCount = 0, baseCost = 0, totalCost = 0, goldOnlyCost = 0, eitherCost = 0, unsupportedSections = unknownSections;
-    const groups = [];
-    for (const [currentLevel, count] of [...byLevel].sort((a, b) => a[0] - b[0])) {
-      const done = currentLevel >= targetLevel && targetLevel > 0;
-      const steps = levels.filter(level => level.level > currentLevel && level.level <= targetLevel);
-      const expectedSteps = Math.max(0, targetLevel - currentLevel);
-      const supported = !!definition && targetLevel > 0 && steps.length === expectedSteps && steps.every(level => Number.isFinite(level.cost) && level.cost >= 0 && /^(?:Builder )?Gold(?: or (?:Builder )?Elixir)?$/.test(level.resource || ''));
-      const group = { currentLevel, count, targetLevel, done, supported, upgradeCount: expectedSteps * count, perWallBaseCost: 0, perWallCost: 0, perWallGoldOnlyCost: 0, perWallEitherCost: 0, baseCost: 0, cost: 0, goldOnlyCost: 0, eitherCost: 0, steps: [] };
+    const groups = [], levelMap = new Map(levels.map(level => [level.level, level]));
+    for (const assignment of assignments.sort((a, b) => a.currentLevel - b.currentLevel || b.targetLevel - a.targetLevel)) {
+      const { currentLevel, count, targetLevel: groupTarget } = assignment;
+      const knownCurrent = levelMap.has(currentLevel) || currentLevel === 0;
+      const done = knownCurrent && currentLevel >= groupTarget && groupTarget > 0;
+      const expectedSteps = knownCurrent ? Math.max(0, groupTarget - currentLevel) : 0;
+      const group = { ...assignment, done, supported: !!definition && knownCurrent && groupTarget > 0, upgradeCount: expectedSteps * count, unknownUpgrades: 0, perWallBaseCost: 0, perWallCost: 0, perWallGoldOnlyCost: 0, perWallEitherCost: 0, baseCost: 0, cost: 0, goldOnlyCost: 0, eitherCost: 0, steps: [] };
       if (done) completedSections += count;
       else remainingSections += count;
-      if (!supported) { unsupportedSections += count; groups.push(group); continue; }
-      for (const level of steps) {
+      for (let next = currentLevel + 1; knownCurrent && next <= groupTarget; next++) {
+        const level = levelMap.get(next);
+        const supported = !!level && Number.isFinite(level.cost) && level.cost >= 0 && /^(?:Builder )?Gold(?: or (?:Builder )?Elixir)?$/.test(level.resource || '');
+        if (!supported) {
+          group.supported = false;
+          group.unknownUpgrades += count;
+          group.steps.push({ level: next, baseCost: null, cost: null, resource: level?.resource || '', supported: false });
+          continue;
+        }
         const price = Math.floor(level.cost * factor + 1e-7);
         const either = / or /.test(level.resource);
         group.perWallBaseCost += level.cost;
         group.perWallCost += price;
         group[either ? 'perWallEitherCost' : 'perWallGoldOnlyCost'] += price;
-        group.steps.push({ level: level.level, baseCost: level.cost, cost: price, either, resource: level.resource });
+        group.steps.push({ level: next, baseCost: level.cost, cost: price, either, resource: level.resource, supported: true });
       }
+      if (!group.supported) unsupportedSections += count;
       group.baseCost = group.perWallBaseCost * count;
       group.cost = group.perWallCost * count;
       group.goldOnlyCost = group.perWallGoldOnlyCost * count;
@@ -67,7 +92,7 @@
       eitherCost += group.eitherCost;
       groups.push(group);
     }
-    return { base, mode, hallLevel, definition, maxLevel, targetLevel, availableLevels: available.map(level => level.level), totalSections, completedSections, remainingSections, unknownSections, unsupportedSections, upgradeCount, baseCost, totalCost, savedCost: Math.max(0, baseCost - totalCost), goldOnlyCost, eitherCost, groups, discount };
+    return { base, mode, hallLevel, definition, maxLevel, targetLevel, targetLimit, alreadyAtTarget, assignedToTarget, cappedSections, completeBudget: unsupportedSections === 0, availableLevels: available.map(level => level.level), totalSections, completedSections, remainingSections, unknownSections, unsupportedSections, upgradeCount, baseCost, totalCost, savedCost: Math.max(0, baseCost - totalCost), goldOnlyCost, eitherCost, groups, discount };
   }
 
   function contextOptions(ctx) {
@@ -93,7 +118,7 @@
     const costs = data.unsupportedSections ? 'Известная часть бюджета' : 'Ресурсы до цели';
     const eventRate = bounded(options.eventReduction ?? 50, 0, 90);
     const selected = (a, b) => Number(a) === Number(b) ? ' selected' : '';
-    const target = data.maxLevel ? `<label for="wall-target">Целевой уровень<select id="wall-target" data-wall-setting="targetLevel">${data.availableLevels.map(level => `<option value="${level}"${selected(level, data.targetLevel)}>Уровень ${level}${level === data.maxLevel ? ' · максимум цели' : ''}</option>`).join('')}</select></label>` : '';
+    const target = data.maxLevel ? `<label for="wall-target">Целевой уровень<select id="wall-target" data-wall-setting="targetLevel">${data.availableLevels.map(level => { const limit=data.definition?.levels.find(item=>item.level===level)?.maxCount; return `<option value="${level}"${selected(level, data.targetLevel)}>Уровень ${level}${Number.isInteger(limit)?' · до '+limit+' секций':level===data.maxLevel?' · максимум цели':''}</option>`; }).join('')}</select></label>` : '';
     const settings = `<div class="wall-controls">${target}${home ? `<label for="wall-pass">Скидка Gold Pass<select id="wall-pass" data-wall-setting="goldPass">${[0, 10, 15, 20].map(value => `<option value="${value}"${selected(value, data.discount.goldPass)}>${value ? value + '%' : 'Без скидки'}</option>`).join('')}</select></label><label for="wall-event-rate">Скидка события<select id="wall-event-rate" data-wall-setting="eventReduction">${[...new Set([50, 75, eventRate])].sort((a, b) => a - b).map(value => `<option value="${value}"${selected(value, eventRate)}>${value}%${value === 75 ? ' · ручной сценарий' : ''}</option>`).join('')}</select></label><label class="wall-checkbox" for="wall-event"><input type="checkbox" id="wall-event" data-wall-setting="eventEnabled"${data.discount.eventEnabled ? ' checked' : ''}><span>Успею оплатить выбранные стены во время события</span></label>` : '<p class="wall-control-note">Для Деревни строителя используется стоимость из справочника без бонусов Gold Pass и Hammer Jam.</p>'}</div>`;
     if (!data.totalSections || !data.maxLevel) return `<section id="wall-calculator" class="walls"><div class="section-head"><div><div class="section-kicker">БЮДЖЕТ ДЕРЕВНИ</div><h2>Стены — сколько осталось вложить</h2><p>Считаем все оставшиеся уровни каждой секции из JSON.</p></div></div><div class="empty"><b>${!data.totalSections ? 'В экспорте нет стен этой деревни' : 'Не удалось определить доступный уровень стен'}</b>Импортируй свежий JSON с данными выбранной деревни.</div></section>`;
     const wallImage = (level, size, row = false) => {
@@ -102,16 +127,18 @@
         ? `<img src="${esc(image)}" alt="${row ? '' : `Стена уровня ${level}`}" width="${size}" height="${size}"${row ? ' loading="lazy"' : ''}>`
         : `<i class="${row ? 'wall-row-placeholder' : 'wall-symbol'}" aria-hidden="true">▥</i>`;
     };
-    const art = `<figure class="wall-target-art">${wallImage(data.targetLevel, 115)}<figcaption>Цель · ур. ${data.targetLevel}</figcaption></figure>`;
+    const art = `<figure class="wall-target-art">${wallImage(data.targetLevel, 115)}<figcaption>Цель · ур. ${data.targetLevel}${data.targetLimit!==null?`<br>до ${n(data.targetLimit)} секций`:''}</figcaption></figure>`;
     const complete = data.completedSections === data.totalSections && !data.unsupportedSections;
     const budgetLabel = data.unsupportedSections && !data.totalCost ? 'Нет данных' : n(data.totalCost);
-    const budgetNote = complete ? 'Секции из снимка уже достигли выбранного уровня' : data.unsupportedSections ? 'Известная часть бюджета; полная стоимость пока не определена' : 'Общий бюджет в единицах ресурсов';
+    const budgetNote = complete ? data.targetLimit!==null?'Доступный максимум для секций из снимка достигнут':'Секции из снимка уже достигли выбранного уровня' : data.unsupportedSections ? 'Известная часть бюджета; полная стоимость пока не определена' : 'Общий бюджет в единицах ресурсов';
     const emptyPayment = complete ? '<div><span>Все выбранные уровни готовы</span><strong>✓</strong></div>' : '<div><span>Для полной стоимости не хватает данных</span><strong>—</strong></div>';
     const payment = `${data.goldOnlyCost ? `<div><span>Обязательно ${resource}</span><strong>${n(data.goldOnlyCost)}</strong></div>` : ''}${data.eitherCost ? `<div><span>На выбор: ${alternative}</span><strong>${n(data.eitherCost)}</strong></div>` : ''}`;
-    const summary = `<div class="wall-budget"><div class="wall-budget-main"><span class="eyebrow">${costs}</span><strong>${budgetLabel}</strong><p>${budgetNote}</p>${data.savedCost ? `<div class="wall-savings">Без скидок: <s>${n(data.baseCost)}</s><br>Экономия: <b>${n(data.savedCost)}</b> · ${percentNumber.format(data.discount.reduction)}%</div>` : ''}</div>${art}<div class="wall-payment">${payment || emptyPayment}</div></div>`;
-    const stats = `<div class="wall-stats"><div><span>Секций в снимке</span><strong>${n(data.totalSections)}</strong></div><div><span>Уже на цели или выше</span><strong>${n(data.completedSections)}</strong></div><div><span>${data.unknownSections ? 'Нужно улучшить · известно' : 'Нужно улучшить секций'}</span><strong>${n(data.remainingSections)}</strong></div><div><span>${data.unsupportedSections ? 'Осталось улучшений · известно' : 'Осталось улучшений'}</span><strong>${n(data.upgradeCount)}</strong></div></div>`;
-    const rows = data.groups.map(group => `<tr><th scope="row"><div class="wall-level-cell">${wallImage(group.currentLevel, 52, true)}<div><b>Уровень ${group.currentLevel}</b><span>${group.done ? 'Цель достигнута' : `→ ${data.targetLevel}`}</span></div></div></th><td>${n(group.count)}</td><td>${group.supported ? n(group.perWallCost) : 'Нет данных'}</td><td>${group.supported ? n(group.cost) : 'Нет данных'}</td></tr>`).join('') + (data.unknownSections ? `<tr><th scope="row"><div class="wall-level-cell"><i class="wall-row-placeholder" aria-hidden="true">▥</i><div><b>Уровень не указан</b><span>Нужен свежий JSON</span></div></div></th><td>${n(data.unknownSections)}</td><td>Нет данных</td><td>Нет данных</td></tr>` : '');
-    return `<section id="wall-calculator" class="walls"><div class="section-head"><div><div class="section-kicker">БЮДЖЕТ ДЕРЕВНИ</div><h2>Стены — сколько осталось вложить</h2><p>Все оставшиеся уровни, количество секций и стоимость до выбранной цели.</p></div><span class="wall-target-badge">Уровень ${data.targetLevel}</span></div>${settings}${summary}${stats}${data.goldOnlyCost && data.eitherCost ? '<p class="wall-explainer">Общий бюджет складывается из обязательного золота и части, которую можно оплатить золотом либо эликсиром. Одно улучшение учтено один раз.</p>' : data.eitherCost ? '<p class="wall-explainer">Эту сумму можно оплатить золотом, эликсиром или распределить между ними. Это один общий бюджет — собирать столько каждого ресурса не требуется.</p>' : ''}${data.discount.eventEnabled ? `<p class="wall-event-note">Стоимость со скидкой события — сценарий, если оплатить все выбранные улучшения до его окончания. Скидки перемножаются: Gold Pass ${data.discount.goldPass}% и событие ${percentNumber.format(data.discount.eventReduction)}% дают ${percentNumber.format(data.discount.reduction)}% общей экономии.</p>` : ''}${data.unsupportedSections ? `<p class="wall-event-note">Для ${n(data.unsupportedSections)} секций не хватает данных. Их стоимость не включена в итог.</p>` : ''}<div class="wall-table-wrap"><table class="wall-table"><caption>Стоимость по текущим уровням</caption><thead><tr><th scope="col">Сейчас → цель</th><th scope="col">Секций</th><th scope="col">На одну секцию</th><th scope="col">Всего ресурсов</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><th scope="row">Итого</th><td>${n(data.totalSections)}</td><td>—</td><td>${n(data.totalCost)}</td></tr></tfoot></table></div><p class="coverage">${esc(data.mode === 'current' ? `Лимит для ${home ? 'ратуши' : 'Дома строителя'} ${data.hallLevel}` : 'Максимальные уровни справочника')}. Учитываем только секции из экспорта. Более высокие стены не понижаются. Улучшение стен мгновенное; время сбора ресурсов не прогнозируется. Цены и допустимые ресурсы — из справочника Clash of Clans Data v0.19.1.</p></section>`;
+    const summary = `<div class="wall-budget"><div class="wall-budget-main"><span class="eyebrow">${costs}</span><strong>${budgetLabel}</strong><p>${budgetNote}</p>${data.savedCost ? `<div class="wall-savings">${data.completeBudget?'Без скидок':'Известно без скидок'}: <s>${n(data.baseCost)}</s><br>Экономия: <b>${n(data.savedCost)}</b> · ${percentNumber.format(data.discount.reduction)}%</div>` : ''}</div>${art}<div class="wall-payment">${payment || emptyPayment}</div></div>`;
+    const limitNote = data.targetLimit!==null ? `<div class="wall-limit-note"><strong>Уровень ${data.targetLevel} — до ${n(data.targetLimit)} секций</strong><p>В снимке на этом уровне или выше: ${n(data.alreadyAtTarget)}.${data.cappedSections?` Ещё ${n(data.cappedSections)} секций считаем до уровня ${data.targetLevel-1}.`:''} Сначала улучшаем самые высокие текущие стены.</p></div>` : '';
+    const stats = `<div class="wall-stats"><div><span>Секций в снимке</span><strong>${n(data.totalSections)}</strong></div><div><span>${data.targetLimit!==null?'На доступной цели':'Уже на цели или выше'}</span><strong>${n(data.completedSections)}</strong></div><div><span>${data.unknownSections ? 'Нужно улучшить · известно' : 'Нужно улучшить секций'}</span><strong>${n(data.remainingSections)}</strong></div><div><span>${data.unsupportedSections ? 'Осталось улучшений · известно' : 'Осталось улучшений'}</span><strong>${n(data.upgradeCount)}</strong></div></div>`;
+    const price = (value,supported) => supported?n(value):value?`${n(value)} + ?`:'Нет данных';
+    const rows = data.groups.map(group => `<tr><th scope="row"><div class="wall-level-cell">${wallImage(group.currentLevel, 52, true)}<div><b>Уровень ${group.currentLevel}</b><span>${group.done ? 'Цель достигнута' : group.currentLevel>data.maxLevel?'Нет уровня в справочнике':`→ ${group.targetLevel}`}${group.capped?` · лимит ур. ${data.targetLevel}`:''}</span></div></div></th><td>${n(group.count)}</td><td>${price(group.perWallCost,group.supported)}</td><td>${price(group.cost,group.supported)}</td></tr>`).join('') + (data.unknownSections ? `<tr><th scope="row"><div class="wall-level-cell"><i class="wall-row-placeholder" aria-hidden="true">▥</i><div><b>Уровень не указан</b><span>Нужен свежий JSON</span></div></div></th><td>${n(data.unknownSections)}</td><td>Нет данных</td><td>Нет данных</td></tr>` : '');
+    return `<section id="wall-calculator" class="walls"><div class="section-head"><div><div class="section-kicker">БЮДЖЕТ ДЕРЕВНИ</div><h2>Стены — сколько осталось вложить</h2><p>Все оставшиеся уровни, количество секций и стоимость до выбранной цели.</p></div><span class="wall-target-badge">Уровень ${data.targetLevel}</span></div>${settings}${limitNote}${summary}${stats}${data.goldOnlyCost && data.eitherCost ? '<p class="wall-explainer">Общий бюджет складывается из обязательного золота и части, которую можно оплатить золотом либо эликсиром. Одно улучшение учтено один раз.</p>' : data.eitherCost ? '<p class="wall-explainer">Эту сумму можно оплатить золотом, эликсиром или распределить между ними. Это один общий бюджет — собирать столько каждого ресурса не требуется.</p>' : ''}${data.discount.eventEnabled ? `<p class="wall-event-note">Стоимость со скидкой события — сценарий, если оплатить все выбранные улучшения до его окончания. Скидки перемножаются: Gold Pass ${data.discount.goldPass}% и событие ${percentNumber.format(data.discount.eventReduction)}% дают ${percentNumber.format(data.discount.reduction)}% общей экономии.</p>` : ''}${data.unsupportedSections ? `<p class="wall-event-note">Для ${n(data.unsupportedSections)} секций не хватает данных. В сумму включены только известные улучшения.</p>` : ''}<div class="wall-table-wrap"><table class="wall-table"><caption>Стоимость по текущим уровням</caption><thead><tr><th scope="col">Сейчас → цель</th><th scope="col">Секций</th><th scope="col">На одну секцию</th><th scope="col">Всего ресурсов</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><th scope="row">${data.completeBudget?'Итого':'Известно'}</th><td>${n(data.totalSections)}</td><td>—</td><td>${price(data.totalCost,data.completeBudget)}</td></tr></tfoot></table></div><p class="coverage">${esc(data.mode === 'current' ? `Лимит для ${home ? 'ратуши' : 'Дома строителя'} ${data.hallLevel}` : 'Максимальные уровни справочника')}. Учитываем только секции из экспорта. Более высокие стены не понижаются. Улучшение стен мгновенное; время сбора ресурсов не прогнозируется. Цены и допустимые ресурсы — из справочника.</p></section>`;
   }
 
   function mount(ctx) {

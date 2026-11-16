@@ -19,7 +19,7 @@ function option(flag) {
 }
 const archiveOption = option('--archive');
 const output = path.resolve(option('--output') || path.join(root, '_site'));
-const publicFiles = ['art.js', 'equipment-ui.js', 'equipment.css', 'equipment-data.json', 'details-ui.js', 'details.css', 'planner-ui.js', 'planner.css', 'walls.js', 'walls.css', 'coach-engine.js', 'coach-ui.js', 'coach.css', 'coach-data.json', 'index.html', 'theme.css', 'dashboard.js', 'engine.js', 'DATA-LICENSE.txt', '.nojekyll'];
+const publicFiles = ['art.js', 'equipment-ui.js', 'equipment.css', 'equipment-data.json', 'details-ui.js', 'details.css', 'planner-ui.js', 'planner.css', 'walls.js', 'walls.css', 'coach-engine.js', 'coach-ui.js', 'coach.css', 'coach-data.json', 'index.html', 'theme.css', 'th19-theme.css', 'new-content-ui.js', 'new-content.css', 'dashboard.js', 'engine.js', 'DATA-LICENSE.txt', 'RELEASE-ASSETS.md', '.nojekyll'];
 function filesBelow(directory) {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
     const file = path.join(directory, entry.name);
@@ -86,8 +86,18 @@ async function main() {
       fs.copyFileSync(resolved, path.join(output, destination));
       count++;
     }
+    const releaseAssets = path.join(root, 'release-assets');
+    const releaseImages = new Map();
+    if (fs.existsSync(releaseAssets)) for (const file of fs.readdirSync(releaseAssets)) {
+      if (!/^[a-z0-9-]+\.png$/.test(file)) throw new Error('Invalid release artwork filename');
+      const bytes = fs.readFileSync(path.join(releaseAssets, file));
+      if (bytes.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') throw new Error('Release artwork must be PNG');
+      const destination = 'assets/release-' + file;
+      fs.writeFileSync(path.join(output, destination), bytes);
+      releaseImages.set(file, destination); count++;
+    }
     for (const entity of database.entities) {
-      const definition = definitions.get(`${entity.base}:${entity.id}`);
+      const definition = definitions.get(`${entity.base}:${entity.assetSourceId ?? entity.id}`);
       if (!definition) throw new Error(`Missing source definition: ${entity.base}:${entity.id}`);
       // An entity-wide icon can be shared by all levels. An image selected from
       // the latest level is only retained for older consumers, never a current-
@@ -115,6 +125,10 @@ async function main() {
         }
         imagesByLevel[level.level] = destination;
         imageLevelCount++;
+      }
+      for (const [level, file] of Object.entries(entity.levelArtOverrides || {})) {
+        if (!/^\d+$/.test(level) || !releaseImages.has(file)) throw new Error('Invalid release level artwork');
+        imagesByLevel[level] = releaseImages.get(file); imageLevelCount++;
       }
       delete entity.imagesByLevel;
       if (Object.keys(imagesByLevel).length) {
