@@ -1,8 +1,8 @@
 /* Snapshot history compares exported levels, never elapsed upgrade timers. */
 const ClashHistory=(()=>{
 'use strict';
-const groups={buildings:'Здания',traps:'Ловушки',units:'Войска',siege_machines:'Осадные машины',heroes:'Герои',spells:'Заклинания',pets:'Питомцы',equipment:'Снаряжение',helpers:'Помощники',buildings2:'Здания',traps2:'Ловушки',units2:'Войска',heroes2:'Герои'};
-const categories={buildings:'Здания и защита',heroes:'Герои и питомцы',army:'Армия и заклинания',walls:'Стены',equipment:'Снаряжение',helpers:'Помощники'};
+const groups={buildings:'Здания',traps:'Ловушки',units:'Войска',siege_machines:'Осадные машины',heroes:'Герои',spells:'Заклинания',pets:'Питомцы',guardians:'Стражи',equipment:'Снаряжение',helpers:'Помощники',buildings2:'Здания',traps2:'Ловушки',units2:'Войска',heroes2:'Герои'};
+const categories={buildings:'Здания и защита',heroes:'Герои, питомцы и стражи',army:'Армия и заклинания',walls:'Стены',equipment:'Снаряжение',helpers:'Помощники'};
 const categoryOrder=Object.keys(categories);
 const choices=new Map();
 const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -14,7 +14,7 @@ const positive=value=>Number.isInteger(value)&&value>0;
 const histogram=list=>[...list].map(([level,count])=>({level,count})).sort((a,b)=>(a.level??-1)-(b.level??-1));
 function stable(value){if(Array.isArray(value))return'['+value.map(stable).sort().join(',')+']';if(value&&typeof value==='object')return'{'+Object.keys(value).sort().map(key=>JSON.stringify(key)+':'+stable(value[key])).join(',')+'}';return JSON.stringify(value);}
 function catalog(ctx){return new Map(definitions(ctx).filter(item=>!item.base||item.base===(ctx.base||'home')).map(item=>[Number(item.id),item]));}
-function category(group,definition){if(definition?.category==='wall'||definition?.slug==='wall')return'walls';if(group==='equipment')return'equipment';if(group==='helpers')return'helpers';if(group.startsWith('heroes')||group==='pets')return'heroes';if(group.startsWith('units')||['spells','siege_machines'].includes(group))return'army';return'buildings';}
+function category(group,definition){if(definition?.category==='wall'||definition?.slug==='wall')return'walls';if(group==='equipment')return'equipment';if(group==='helpers')return'helpers';if(group.startsWith('heroes')||['pets','guardians'].includes(group))return'heroes';if(group.startsWith('units')||['spells','siege_machines'].includes(group))return'army';return'buildings';}
 function inventory(raw,group){
   const result=new Map();
   for(const item of raw[group]){

@@ -19,7 +19,7 @@ function makeModel(ctx={},includeTag=false){
   planned:Number.isFinite(result.plannedObjects)?result.plannedObjects:0,tag:includeTag&&!ctx.demo?raw.tag||'':null,demo:!!ctx.demo};
 }
 async function loadImage(src){
- if(typeof src!=='string'||!/^assets\/[a-zA-Z0-9_./-]+\.png$/.test(src)||src.includes('..'))return null;
+ if(typeof src!=='string'||!/^assets\/[a-zA-Z0-9_./-]+\.(?:png|webp)$/.test(src)||src.includes('..'))return null;
  return new Promise(resolve=>{const img=new Image(),timer=setTimeout(()=>resolve(null),5000);img.onload=()=>{clearTimeout(timer);resolve(img)};img.onerror=()=>{clearTimeout(timer);resolve(null)};img.src=src;});
 }
 async function buildCanvas(model){

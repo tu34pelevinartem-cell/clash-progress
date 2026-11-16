@@ -1,6 +1,6 @@
 /* Forecast engine: export parser, requirement caps and parallel work queues. */
 const ClashEngine=(()=>{
-const groups={buildings:'Здания',traps:'Ловушки',units:'Войска',siege_machines:'Осадные машины',heroes:'Герои',spells:'Заклинания',pets:'Питомцы',equipment:'Снаряжение',helpers:'Помощники',buildings2:'Здания',traps2:'Ловушки',units2:'Войска',heroes2:'Герои'};
+const groups={buildings:'Здания',traps:'Ловушки',units:'Войска',siege_machines:'Осадные машины',heroes:'Герои',guardians:'Стражи',spells:'Заклинания',pets:'Питомцы',equipment:'Снаряжение',helpers:'Помощники',buildings2:'Здания',traps2:'Ловушки',units2:'Войска',heroes2:'Герои'};
 function parse(text){let raw=JSON.parse(text);if(typeof raw==='string')raw=JSON.parse(raw);if(!raw||typeof raw.tag!=='string'||!/^#[A-Z0-9]+$/i.test(raw.tag)||!Array.isArray(raw.buildings)||!Number.isInteger(raw.timestamp)||raw.timestamp<0||raw.timestamp>4102444800)throw Error('Нужен JSON экспорта деревни Clash of Clans.');const rows=[];for(const [group,label]of Object.entries(groups)){if(raw[group]!==undefined&&!Array.isArray(raw[group]))throw Error('Некорректный раздел '+group);for(const [index,r]of(raw[group]||[]).entries()){if(!Number.isInteger(r.data)||r.data<0||r.lvl!==undefined&&(!Number.isInteger(r.lvl)||r.lvl<0||r.lvl>999)||r.cnt!==undefined&&(!Number.isInteger(r.cnt)||r.cnt<1||r.cnt>10000)||r.timer!==undefined&&(!Number.isFinite(r.timer)||r.timer<0||r.timer>315360000))throw Error('Некорректный объект в разделе '+group);rows.push({key:group+':'+index,group,label,base:group.endsWith('2')?'builder':'home',data:r.data,level:r.lvl??null,count:r.cnt??1,end:r.timer!==undefined?(raw.timestamp+r.timer)*1000:null,types:r.types||null})}}if(rows.length>10000)throw Error('Слишком большой экспорт.');return{raw,rows}}
 function hall(snapshot,base){return snapshot.rows.find(r=>r.data===(base==='home'?1000001:1000034))?.level||1}
 function entity(db,id,base){return db.find(d=>d.id===id&&d.base===base)}
@@ -8,12 +8,15 @@ function cap(d,db,target,mode='current'){if(!d)return null;if(mode==='maximum')r
 const knownNumber=value=>typeof value==='number'&&Number.isFinite(value)&&value>=0;
 function describe(row,db,target,mode,boost=0,now=Date.now(),planDefinition=null){
  const d=planDefinition||entity(db,row.data,row.base),max=cap(d,db,target,mode);
+ // A level-less fixed object has no upgradeable level in the game export.
+ // Only an explicit catalog contract may supply it; ordinary omissions stay unknown.
+ if(row.level===null&&d?.fixedLevel===1&&d.levels.some(level=>level.level===1))row={...row,level:1,fixedLevelApplied:true};
  const absent=row.group==='equipment'&&row.level===0;
  const levelKnown=Number.isInteger(row.level)&&row.level>=0&&!!d&&(row.level===0||d.levels.some(l=>l.level===row.level));
  const supported=!!d&&levelKnown&&max!==null&&max>0;
  // The imported level is a fact, even if the selected goal or dataset is lower.
  const top=Math.max(row.level??0,max??0);
- const scopeExcluded=row.group==='helpers'||!!row.types||!!d&&(d.category==='guardian'||d.category==='other'&&d.slug!=='clock-tower');
+ const scopeExcluded=row.group==='helpers'||!!row.types||!!d&&(d.category==='guardian'&&row.group!=='guardians'||d.category==='other'&&d.slug!=='clock-tower');
  const modeled=supported&&!absent&&!scopeExcluded;
  const levels=supported&&!absent?d.levels.filter(l=>l.level>row.level&&l.level<=top).sort((a,b)=>a.level-b.level):[];
  const costs={},ore=[0,0,0],dataGaps=[];

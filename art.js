@@ -1,7 +1,7 @@
 /* Images follow the exported object level, independently of the upgrade goal. */
 (function (root) {
   'use strict';
-  const safePath = value => typeof value === 'string' && /^assets\/[a-zA-Z0-9_-]+\.png$/.test(value) ? value : null;
+  const safePath = value => typeof value === 'string' && /^assets\/[a-zA-Z0-9_-]+\.(?:png|webp)$/.test(value) ? value : null;
   function image(entity, level) {
     if (!entity) return null;
     if (entity.imagesByLevel && Object.keys(entity.imagesByLevel).length) {

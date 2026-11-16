@@ -123,7 +123,7 @@
     if (!data.totalSections || !data.maxLevel) return `<section id="wall-calculator" class="walls"><div class="section-head"><div><div class="section-kicker">БЮДЖЕТ ДЕРЕВНИ</div><h2>Стены — сколько осталось вложить</h2><p>Считаем все оставшиеся уровни каждой секции из JSON.</p></div></div><div class="empty"><b>${!data.totalSections ? 'В экспорте нет стен этой деревни' : 'Не удалось определить доступный уровень стен'}</b>Импортируй свежий JSON с данными выбранной деревни.</div></section>`;
     const wallImage = (level, size, row = false) => {
       const image = typeof ClashArt !== 'undefined' ? ClashArt.image(data.definition, level) : null;
-      return image && /^assets\/[a-zA-Z0-9_./-]+\.png$/.test(image)
+      return image && /^assets\/[a-zA-Z0-9_./-]+\.(?:png|webp)$/.test(image)
         ? `<img src="${esc(image)}" alt="${row ? '' : `Стена уровня ${level}`}" width="${size}" height="${size}"${row ? ' loading="lazy"' : ''}>`
         : `<i class="${row ? 'wall-row-placeholder' : 'wall-symbol'}" aria-hidden="true">▥</i>`;
     };

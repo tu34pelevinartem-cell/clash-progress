@@ -18,6 +18,7 @@ function option(flag) {
   return args[index + 1];
 }
 const archiveOption = option('--archive');
+const releaseArtDirectory = option('--release-art-dir');
 const output = path.resolve(option('--output') || path.join(root, '_site'));
 const publicFiles = ['art.js', 'equipment-ui.js', 'equipment.css', 'equipment-data.json', 'details-ui.js', 'details.css', 'planner-ui.js', 'planner.css', 'walls.js', 'walls.css', 'coach-engine.js', 'coach-ui.js', 'coach.css', 'coach-data.json', 'index.html', 'theme.css', 'th19-theme.css', 'new-content-ui.js', 'new-content.css', 'progress-history.js', 'progress-history.css', 'progress-share.js', 'progress-share.css', 'dashboard.js', 'engine.js', 'DATA-LICENSE.txt', 'RELEASE-ASSETS.md', '.nojekyll'];
 function filesBelow(directory) {
@@ -98,7 +99,13 @@ async function main() {
     }
     for (const entity of database.entities) {
       const definition = definitions.get(`${entity.base}:${entity.assetSourceId ?? entity.id}`);
-      if (!definition) throw new Error(`Missing source definition: ${entity.base}:${entity.id}`);
+      if (!definition) {
+        if (!entity.releaseAsset) throw new Error(`Missing source definition: ${entity.base}:${entity.id}`);
+        entity.imageIsGeneric = false;
+        delete entity.image;
+        delete entity.imagesByLevel;
+        continue;
+      }
       // An entity-wide icon can be shared by all levels. An image selected from
       // the latest level is only retained for older consumers, never a current-
       // level fallback for the new renderer.
@@ -141,6 +148,34 @@ async function main() {
           if (image) copyImage(image, `assets/town-hall-${level.level}.png`);
         }
       }
+    }
+    const artworkManifest = JSON.parse(fs.readFileSync(path.join(root, 'data/release-artwork.json'), 'utf8'));
+    if (!/^[a-f0-9]{40}$/.test(artworkManifest.commit)) throw new Error('Invalid release artwork commit');
+    for (let offset = 0; offset < artworkManifest.files.length; offset += 6) {
+      await Promise.all(artworkManifest.files.slice(offset, offset + 6).map(async item => {
+        if (!/^assets\/[a-zA-Z0-9_/-]+\.webp$/.test(item.path) || item.path.includes('..') || !/^assets\/release-[a-z0-9-]+\.webp$/.test(item.destination)) throw new Error('Invalid release artwork path');
+        let bytes;
+        if (releaseArtDirectory) bytes = fs.readFileSync(path.join(path.resolve(releaseArtDirectory), path.basename(item.destination)));
+        else {
+          const url = `https://raw.githubusercontent.com/ClashKingInc/ClashKingAssets/${artworkManifest.commit}/${item.path}`;
+          const response = await fetch(url, { signal: AbortSignal.timeout(60000) });
+          if (!response.ok) throw new Error('Release artwork download failed: ' + response.status);
+          bytes = Buffer.from(await response.arrayBuffer());
+        }
+        if (bytes.length !== item.size || bytes.subarray(0,4).toString() !== 'RIFF' || bytes.subarray(8,12).toString() !== 'WEBP') throw new Error('Invalid release image');
+        const digest = crypto.createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex');
+        if (digest !== item.sha) throw new Error('Release image integrity mismatch');
+        fs.writeFileSync(path.join(output, item.destination), bytes);
+        const entity = database.entities.find(row => row.id === item.id && row.base === 'home');
+        if (!entity) throw new Error('Missing artwork entity');
+        if (item.level === null) { entity.image = item.destination; entity.imageIsGeneric = true; }
+        else { entity.imagesByLevel = { ...(entity.imagesByLevel || {}), [item.level]: item.destination }; entity.imageIsGeneric = false; imageLevelCount++; }
+        count++;
+      }));
+    }
+    for (const item of database.pendingEntities || []) {
+      const entity = database.entities.find(row => row.id === item.id);
+      if (entity?.imagesByLevel?.[1] || entity?.image) item.image = entity.imagesByLevel?.[1] || entity.image;
     }
     for (const ore of ['shiny-ore', 'glowy-ore', 'starry-ore']) copyImage(`images/other/ore/${ore}.png`, `assets/${ore}.png`);
     // Add only presentation metadata to the output; the source gameplay
