@@ -39,7 +39,7 @@ function render(ctx){
   const baselineLabel=gold?'Только Gold Pass '+gold+'%':'Без ускорений';
   const eventOptions=[...new Set([0,50,75,...(event>0?[event]:[])])].sort((a,b)=>a-b);
   return`<section class="planner" id="clash-planner" aria-labelledby="planner-title">
-    <div class="planner-heading"><div><div class="eyebrow">ТВОЙ ТЕМП ПРОКАЧКИ</div><h2 id="planner-title">Ускорения и зелья</h2><p>Укажи, чем пользуешься. Срок до цели пересчитается сразу.</p></div></div>
+    <div class="planner-heading"><div><h2 id="planner-title">Ускорения</h2></div></div>
     ${partial?'<p class="planner-partial">Не для всех улучшений известны сроки. Ниже — прогноз по доступным данным.</p>':''}
     <div class="planner-results" aria-live="polite" aria-atomic="true">
       <div class="planner-summary"><span>${baselineLabel}</span><strong>${esc(fmtTotal(original.time))}</strong><small>${esc(fmtDate(original.time))}</small></div>
@@ -47,7 +47,7 @@ function render(ctx){
     </div>
     <div class="planner-controls">
       ${home?`<div class="planner-control-card">
-        <div class="planner-card-title"><span class="planner-step">1</span><h3>Что используешь каждый день</h3></div>
+        <div class="planner-card-title"><span class="planner-step">1</span><h3>Ежедневные бонусы</h3></div>
         <div class="planner-everyday">
           <label class="planner-field" for="planner-goldPass"><span>Бонус Gold Pass</span><select id="planner-goldPass" data-planner-number="goldPass">${[0,10,15,20].map(n=>`<option value="${n}"${gold===n?' selected':''}>${n?n+'%':'Без бонуса'}</option>`).join('')}</select></label>
           <label class="planner-check planner-helpers-check" for="planner-helpers"><input id="planner-helpers" data-planner-helpers type="checkbox"${helpersOn?' checked':''}${!helpersAvailable&&!helpersOn?' disabled':''}><span>Учитывать помощников<small>${helpersAvailable?`Из JSON: строитель ур. ${levels.apprenticeLevel}, лаборант ур. ${levels.labAssistantLevel}.`:'В JSON помощники не найдены. Уровни можно указать вручную ниже.'}</small></span></label>
@@ -55,12 +55,12 @@ function render(ctx){
         <details id="planner-helper-details" class="planner-small-details"><summary>Уровни помощников вручную</summary><div class="planner-fields planner-fields-two">${select('apprenticeLevel',p.apprenticeLevel,'Помощник строителя',8)}${select('labAssistantLevel',p.labAssistantLevel,'Лаборант',12)}</div></details>
       </div>
       <div class="planner-control-card">
-        <div class="planner-card-title"><span class="planner-step">2</span><h3>Зелья, которые используешь сейчас</h3></div>
+        <div class="planner-card-title"><span class="planner-step">2</span><h3>Зелья из запаса</h3></div>
         <div class="planner-fields">
           ${number('builderPotions',p.builderPotions,'Зелья строителя сейчас','×10 на 1 час для всех занятых строителей.')}
           ${number('researchPotions',p.researchPotions,'Зелья лаборатории сейчас','×24 на 1 час.')}
           ${number('petPotions',p.petPotions,'Зелья питомцев сейчас','×24 на 1 час.')}
-        </div><p class="planner-help">Эти зелья включаем сразу, одно за другим. Количество — на весь прогноз.</p>
+        </div><p class="planner-help">Используем подряд с начала прогноза.</p>
       </div>
       <div class="planner-control-card planner-klimat">
         <div class="planner-card-title"><span class="planner-step">3</span><div><span class="planner-card-kicker">ЛАБОРАТОРИЯ · ЕЖЕНЕДЕЛЬНЫЙ ПЛАН</span><h3>Специально для игрока klimat</h3></div></div>

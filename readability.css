@@ -1,0 +1,550 @@
+/* Readable type and calm spacing. This layer follows the feature styles. */
+body #import-file{display:flex;margin:8px 0 20px}body #import-form>label{display:block;margin-top:12px;font-size:15px}
+:root{--muted:#b6b0a2;--read-secondary:13px;--read-label:14px;--read-body:16px}
+[hidden]{display:none!important}
+body{font-size:var(--read-body);line-height:1.55;text-size-adjust:100%;-webkit-text-size-adjust:100%}
+body main{margin-left:240px;padding:0 32px;max-width:1780px;min-width:0}
+body .sidebar{width:240px;padding:26px 14px 20px}
+body nav button{font-size:14px;line-height:1.4;min-height:46px;padding:12px 13px;gap:10px;white-space:normal}
+body .nav-icon{width:20px;height:20px}
+body .side-label,body .eyebrow,body .section-kicker{font-size:12px;letter-spacing:1.2px}
+body .side-bottom,body .side-bottom button{font-size:13px;line-height:1.6}
+body .mobile-navigation{display:none}
+body .hero{min-height:0;padding:24px;align-items:center;gap:24px}
+body .hero-content{width:auto;min-width:0;flex:1;max-width:none}
+body .hero h1{font-size:32px;line-height:1.25;letter-spacing:-.6px;margin:0 0 10px}
+body .hero p{font-size:15px;line-height:1.6;max-width:none;min-height:0;margin:0}
+body .hero-pills{margin-top:13px;gap:8px;max-width:none}
+body .hero-pills span{font-size:13px;line-height:1.5;padding:6px 9px}
+body .hero-art{position:relative;inset:auto;flex:0 0 135px;width:135px;min-width:0;height:145px;opacity:1}
+body .hero-art img{width:135px;height:140px;transform:none;max-width:100%}
+body .hero-button{font-size:14px;min-height:44px;margin-top:16px}
+body.subpage #metrics{display:none}
+body .calculation-options{margin:20px 0;border:1px solid var(--line);border-radius:8px;background:var(--panel);min-width:0}
+body .calculation-options>summary{font-size:15px;line-height:1.5;padding:14px 18px;min-height:50px;cursor:pointer;color:var(--text)}
+body .calculation-options .forecast-settings{margin:0;border:0;border-top:1px solid var(--line);border-radius:0;background:none}
+body[data-page=equipment] .calculation-options,body[data-page=walls] .calculation-options,body[data-page=history] .calculation-options,body[data-page=timers] .calculation-options{display:none}
+body .feature-help,body .eq-budget-details,body .coverage-method{margin:16px 0;border-top:1px solid var(--line);padding-top:10px;color:var(--muted);font-size:14px;line-height:1.75}
+body .feature-help>summary,body .eq-budget-details>summary,body .coverage-method>summary{font-size:14px;line-height:1.6;min-height:44px;cursor:pointer;padding:10px 0;color:var(--text)}
+body .feature-help p,body .feature-help li,body .eq-budget-details p,body .coverage-method p{font-size:14px;line-height:1.75;max-width:70ch}
+body .new-content-catalog-toggle{margin:20px 0;border:1px solid var(--line);border-radius:8px;background:var(--panel);min-width:0}
+body .new-content-catalog-toggle>summary{font-size:15px;font-weight:600;line-height:1.5;min-height:52px;padding:15px 18px;cursor:pointer}
+body .new-content-catalog-toggle>summary span{font-size:13px;color:var(--muted);font-weight:400;margin-left:9px}
+body .new-content-catalog-toggle .new-content-panel{margin:0;border:0;border-top:1px solid var(--line);border-radius:0;padding:20px}
+body header{min-height:82px;height:auto;padding:17px 0;gap:16px}
+body .crumb{font-size:13px;letter-spacing:0}
+body .crumb span{padding:0 8px}
+body .save-indicator,body #snapshot-label{font-size:13px;color:var(--muted);line-height:1.5}
+body .button,body .chip,body .section-head button{font-size:14px;line-height:1.4;min-height:44px;padding:11px 16px}
+body .header-actions{gap:9px;flex-wrap:wrap}
+body button,body select,body input{touch-action:manipulation}
+body button:focus-visible,body a:focus-visible,body input:focus-visible,body select:focus-visible,body summary:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+body select,body input:not([type=checkbox]):not([type=radio]),body textarea{font-size:16px;min-height:44px;max-width:100%}
+body input[type=checkbox],body input[type=radio]{width:20px;height:20px;flex:none}
+body .demo-banner{font-size:13px;letter-spacing:0;padding:16px 18px;line-height:1.6}
+body .demo-banner span,body .demo-banner button{font-size:14px}
+body .demo-banner button{min-height:44px}
+body .village-switch{gap:16px;flex-wrap:wrap;margin:22px 0 20px}
+body .segmented{max-width:100%;min-width:0}
+body .segmented button{font-size:14px;min-height:44px;padding:10px 15px;line-height:1.35;white-space:normal}
+body .forecast-settings{padding:18px;gap:16px;flex-wrap:wrap;align-items:end}
+body .forecast-settings label{font-size:14px;min-width:140px;flex:1}
+body .forecast-settings select{font-size:16px;padding:11px 12px;min-height:46px}
+body .settings-note{font-size:13px;line-height:1.6}
+body .metric-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:26px}
+body .metric{padding:20px;min-height:130px;min-width:0}
+body .metric-label{font-size:14px;line-height:1.5}
+body .metric strong{font-size:32px;line-height:1.25;margin:13px 0 10px;letter-spacing:-.7px;overflow-wrap:anywhere}
+body .metric small{font-size:13px;line-height:1.6;color:var(--muted)}
+body .section-head{margin:30px 0 20px;gap:16px;align-items:center}
+body .section-head h2{font-size:26px;line-height:1.3;letter-spacing:-.5px;margin:0}
+body .section-head p{font-size:14px;line-height:1.6;margin-top:9px}
+body .overview-columns{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:20px}
+body .panel{padding:24px;min-width:0}
+body .panel h3{font-size:18px;line-height:1.4;margin-bottom:20px}
+body .category-line{gap:14px;padding:16px 0}
+body .category-line b{font-size:15px;line-height:1.4}
+body .category-line small{font-size:13px}
+body .category-line>span{font-size:16px}
+body .category-line img{width:50px;height:50px}
+body .hero-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+body .mini-hero{min-width:0}
+body .mini-hero img{height:110px;padding-top:14px}
+body .mini-hero b{font-size:13px;line-height:1.4;margin:10px 7px 5px}
+body .mini-hero span{font-size:13px;padding-bottom:14px}
+body .queue-grid{grid-template-columns:repeat(auto-fit,minmax(min(270px,100%),1fr));gap:14px}
+body .queue-card{padding:18px;text-align:left;gap:15px;min-width:0}
+body .queue-card img{width:66px;height:66px}
+body .queue-card b{font-size:15px;line-height:1.4}
+body .queue-card p{font-size:13px;line-height:1.5;margin:7px 0}
+body .timer{font-size:15px}
+body .library-tools{padding:14px;gap:10px}
+body .library-tools input{font-size:16px;padding:12px;min-width:190px}
+body .library-tools select{font-size:14px;min-height:44px;max-width:100%}
+body .chip{padding:10px 14px}
+body .cards{grid-template-columns:repeat(auto-fit,minmax(min(245px,100%),1fr));gap:16px}
+body .unit-card{min-width:0;border-radius:9px}
+body .unit-art{height:154px}
+body .unit-art img{height:126px}
+body .unit-quantity{font-size:13px;top:12px;right:12px;padding:4px 7px}
+body .unit-status{font-size:11px;line-height:1.4;top:12px;padding:4px 7px;max-width:65%;overflow-wrap:anywhere}
+body .unit-body{padding:18px}
+body .unit-body h3{font-size:16px;line-height:1.4;min-height:0;margin:0 0 10px}
+body .level-line{font-size:14px;line-height:1.5;gap:8px;flex-wrap:wrap}
+body .unit-foot{font-size:13px;line-height:1.5;padding-top:12px;margin-top:14px;gap:8px;flex-wrap:wrap}
+body .unit-foot strong{font-size:14px;line-height:1.5}
+body .metric-line{height:5px}
+body .coverage,body .note,body .forecast-footnote{font-size:13px;line-height:1.75;color:var(--muted)}
+body .coverage button,body .forecast-footnote button{font-size:13px;line-height:1.6;min-height:36px}
+body .empty{font-size:15px;line-height:1.7;padding:36px 22px}
+body .empty b{font-size:21px;line-height:1.4}
+body .cost-grid{grid-template-columns:repeat(auto-fit,minmax(min(225px,100%),1fr));gap:14px}
+body .cost-box{padding:20px}
+body .cost-box span{font-size:14px}
+body .cost-box strong{font-size:25px;line-height:1.3}
+body .forecast-extra>summary{font-size:15px;min-height:52px;padding:17px 20px}
+body footer{font-size:12px;line-height:1.6;letter-spacing:0;gap:14px;padding:25px 0}
+body footer button{font-size:14px;min-height:44px;margin-left:10px}
+body footer small{font-size:12px;color:var(--muted)}
+
+/* Equipment: keep the resource overview, make every row readable. */
+body .eq-heading{gap:20px;margin:8px 0 22px;align-items:end}
+body .eq-heading h2{font-size:28px;line-height:1.3}
+body .eq-target-label{font-size:14px;min-width:240px}
+body .eq-target-label select{font-size:16px;min-height:46px;padding:11px 12px}
+body .eq-summary{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px}
+body .eq-summary>div{padding:19px;min-width:0}
+body .eq-summary-progress>span,body .eq-summary-ore span{font-size:13px;line-height:1.5}
+body .eq-summary-progress strong{font-size:30px;line-height:1.3}
+body .eq-summary-progress strong small{font-size:19px}
+body .eq-summary-progress p,body .eq-summary-ore small,body .eq-summary-note{font-size:13px;line-height:1.65}
+body .eq-summary-ore{gap:10px}
+body .eq-summary-ore strong{font-size:25px;white-space:normal;overflow-wrap:anywhere}
+body .eq-summary-ore>img{width:33px;height:36px}
+body .eq-hero-tabs{padding:5px;gap:5px}
+body .eq-hero-tabs button{font-size:14px;min-height:44px;padding:10px 14px}
+body .eq-hero-tabs button span{font-size:12px}
+body .eq-tools{gap:12px;margin-top:16px;flex-wrap:wrap}
+body .eq-search{min-width:220px;flex:1}
+body .eq-search input{font-size:16px;min-height:46px;padding:11px 0}
+body .eq-sort,body .eq-ownership{min-width:175px;flex:1}
+body .eq-sort select,body .eq-ownership select{font-size:14px;min-height:46px;padding:11px 12px}
+body .eq-remaining{font-size:14px;min-height:44px;white-space:normal;line-height:1.5}
+body .eq-result-line{font-size:13px;line-height:1.6;gap:12px;margin:17px 0 14px;flex-wrap:wrap}
+body .eq-result-line>span:last-child{max-width:none;text-align:left}
+body .eq-items{grid-template-columns:repeat(auto-fit,minmax(min(255px,100%),1fr));gap:14px}
+body .eq-card{grid-template-columns:67px minmax(0,1fr);gap:0 12px;min-height:154px;padding:16px;text-align:left}
+body .eq-card-art,body .eq-card-art img{width:65px;height:68px}
+body .eq-card-title{font-size:16px;line-height:1.4;min-height:0;display:block;-webkit-line-clamp:unset;overflow:visible}
+body .eq-card-level{font-size:13px;line-height:1.5;margin-top:7px;gap:5px;flex-wrap:wrap;white-space:normal}
+body .eq-card-level>b{font-size:15px}
+body .eq-card-level em,body .eq-ownership-status{font-size:13px;line-height:1.5;margin-left:0}
+body .eq-card-track{height:5px;margin-top:9px}
+body .eq-card-cost{margin-top:15px;padding-top:12px;gap:9px;flex-wrap:wrap;justify-content:flex-start;min-height:31px}
+body .eq-ore{gap:5px;min-width:70px;line-height:1.4}
+body .eq-ore img{width:18px;height:19px}
+body .eq-ore>b{font-size:13px;letter-spacing:0}
+body .eq-ore-label{font-size:12px}
+body .eq-complete,body .eq-no-data{font-size:13px;line-height:1.5}
+body .eq-card-art>.eq-absence-mark{width:24px;height:24px;font-size:19px}
+
+/* Forecast controls and expanded explanations. */
+body .planner-heading h2{font-size:28px;line-height:1.3}
+body .planner-heading p,body .planner-partial{font-size:14px;line-height:1.65}
+body .planner-summary>span{font-size:14px;line-height:1.5}
+body .planner-summary strong{font-size:35px;line-height:1.25}
+body .planner-summary small{font-size:13px;line-height:1.65}
+body .planner-card-title h3{font-size:18px;line-height:1.4}
+body .planner-step{font-size:14px;width:30px;height:30px}
+body .planner-card-kicker{font-size:12px;letter-spacing:.6px}
+body .planner-field{font-size:14px;gap:9px;line-height:1.5}
+body .planner-field input,body .planner-field select{font-size:16px;min-height:46px;padding:11px 12px}
+body .planner-field small,body .planner-check small,body .planner-help{font-size:13px;line-height:1.7}
+body .planner-check{font-size:15px;line-height:1.55;min-height:44px;gap:12px}
+body .planner-check input{width:21px;height:21px}
+body .planner-small-details>summary,body .planner-breakdown>summary,body .planner-method summary{font-size:14px;min-height:44px;line-height:1.6}
+body .planner-small-details>summary{padding:9px 0}
+body .planner-method>div{font-size:14px;line-height:1.75}
+body .planner-event>summary{font-size:15px;line-height:1.55;min-height:52px}
+body .planner-event>summary b{font-size:13px;white-space:normal}
+body .planner-weekly-check{font-size:16px}
+body .planner-weekly-result{font-size:14px;line-height:1.6}
+body .planner-weekly-result strong{font-size:28px;line-height:1.3}
+body .planner-weekly-result small{font-size:13px;line-height:1.7}
+body .planner-table{font-size:14px;min-width:540px}
+body .planner-table thead th{font-size:13px;color:var(--muted)}
+
+/* Wall costs and exact level tables. Wide tables scroll inside their panel. */
+body .walls .section-head h2{font-size:26px}
+body .walls .section-head p{font-size:14px}
+body .wall-target-badge{font-size:13px;line-height:1.5;padding:8px 12px}
+body .wall-controls{grid-template-columns:repeat(3,minmax(0,1fr));gap:17px;padding:22px}
+body .wall-controls>label{font-size:14px;min-width:0}
+body .wall-controls select{font-size:16px;min-height:46px;padding:11px 12px}
+body .wall-control-note,body .wall-budget-main>p,body .wall-savings,body .wall-payment span,body .wall-explainer,body .wall-event-note{font-size:14px;line-height:1.7}
+body .wall-budget-main>strong{font-size:clamp(30px,3.2vw,46px);line-height:1.25}
+body .wall-payment strong{font-size:26px;line-height:1.3}
+body .wall-stats span{font-size:14px;line-height:1.55}
+body .wall-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+body .wall-stats strong{font-size:30px;line-height:1.3}
+body .wall-target-art figcaption{font-size:13px;line-height:1.55;white-space:normal}
+body .wall-limit-note strong{font-size:15px;line-height:1.5}
+body .wall-limit-note p{font-size:14px;line-height:1.7}
+body .wall-table{font-size:14px;min-width:650px}
+body .wall-table caption{font-size:17px;line-height:1.5}
+body .wall-table thead th{font-size:13px}
+body .wall-table tbody th b{font-size:15px}
+body .wall-table tbody th span{font-size:13px;line-height:1.5}
+body .wall-table-wrap,body .planner-table-wrap,body .new-content-level-wrap{max-width:100%;min-width:0;overscroll-behavior-x:contain}
+
+/* New content remains a small, readable catalogue. */
+body .new-content-panel{padding:22px;margin:24px 0}
+body .new-content-heading h3{font-size:23px;line-height:1.4}
+body .new-content-kicker{font-size:12px;letter-spacing:1px}
+body .new-content-catalog{font-size:13px;line-height:1.5;white-space:normal}
+body .new-content-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+body .new-content-card summary{grid-template-columns:62px minmax(0,1fr) 16px;padding:18px;gap:14px 12px}
+body .new-content-art{width:59px;height:62px}
+body .new-content-art img{width:59px;height:60px}
+body .new-content-title{font-size:16px;line-height:1.4;min-height:0}
+body .new-content-th,body .new-content-english{font-size:13px;line-height:1.5}
+body .new-content-cost>span,body .new-content-cost>.new-content-level-caption{font-size:13px;line-height:1.55}
+body .new-content-cost strong{font-size:14px;line-height:1.5;margin-top:4px}
+body .new-content-details{padding:0 18px 18px}
+body .new-content-details p,body .new-content-origin,body .new-content-details a{font-size:14px;line-height:1.7}
+body .new-content-facts span{font-size:13px;line-height:1.5}
+body .new-content-levels{font-size:14px;min-width:370px}
+body .new-content-levels caption{font-size:16px;line-height:1.5}
+body .new-content-levels thead th{font-size:13px}
+body .new-content-levels td:nth-child(2){min-width:125px}
+body .new-content-plan legend{font-size:15px}
+body .new-content-plan label{font-size:14px;grid-template-columns:80px minmax(0,1fr)}
+body .new-content-plan>p,body .new-content-plan small,body .new-content-plan-result,body .new-content-details .new-content-plan-linked{font-size:13px;line-height:1.7}
+body .new-content-plan select{font-size:15px;min-height:44px}
+
+/* Dialogs have normal reading text; values remain prominent. */
+body dialog{width:650px;max-width:calc(100vw - 32px);padding:26px;line-height:1.6}
+body .dialog-head h2,body #detail-dialog h2{font-size:27px;line-height:1.35}
+body .dialog-head>button{min-width:44px;min-height:44px;font-size:29px;flex:none}
+body dialog p,body dialog a,body .steps{font-size:15px;line-height:1.75}
+body dialog textarea{font-size:14px;line-height:1.6}
+body .fine,body #import-preview{font-size:13px;line-height:1.7}
+body #detail-dialog{width:720px;padding:26px}
+body .detail-object{gap:22px}
+body .detail-object .detail-summary>div,body .detail-budget-label,body .detail-resource-totals span,body .detail-count{font-size:14px;line-height:1.5}
+body .detail-object .detail-summary strong{font-size:29px;line-height:1.25}
+body .detail-ore b{font-size:20px;line-height:1.4}
+body .detail-ore small{font-size:13px;white-space:normal;line-height:1.4}
+body .detail-resource-totals b{font-size:24px;line-height:1.4}
+body .detail-presence-label{font-size:16px}
+body .detail-presence-choice p,body .detail-absence-note,body .detail-budget-pending,body .detail-pending-note{font-size:14px;line-height:1.75}
+body .detail-presence-choice button{font-size:14px;min-height:44px;padding:11px 14px}
+body .upgrade-table,body .equipment-upgrade-table{font-size:14px;line-height:1.6}
+body .equipment-upgrade-table thead th{font-size:13px;white-space:normal}
+body .upgrade-table td,body .upgrade-table th,body .upgrade-table tbody th{padding:12px 7px}
+body .detail-complete{font-size:15px}
+body #progress-share-dialog{width:700px;padding:26px}
+body .share-description,body .share-tag{font-size:15px;line-height:1.7}
+body #share-status{font-size:14px;line-height:1.6}
+body .share-trigger{font-size:14px;min-height:44px}
+body #toast{font-size:15px;line-height:1.6}
+
+/* Progress history uses the same reading scale. */
+body .ph-heading h2{font-size:28px;line-height:1.3}
+body .ph-heading p,body .ph-method,body .ph-local,body .ph-selector label{font-size:14px;line-height:1.6}
+body .ph-selector select{font-size:15px;min-height:46px;padding:10px}
+body .ph-period b{font-size:23px}
+body .ph-period span{font-size:13px}
+body .ph-metric>span{font-size:14px;line-height:1.5;min-height:0}
+body .ph-metric strong{font-size:34px;line-height:1.3}
+body .ph-metric small{font-size:13px;line-height:1.6}
+body .ph-filters button{font-size:14px;min-height:44px;padding:10px 14px}
+body .ph-filters button span{font-size:12px}
+body .ph-group-head h3{font-size:19px}
+body .ph-group-head>span{font-size:13px}
+body .ph-item h4{font-size:16px;line-height:1.45}
+body .ph-item-kind,body .ph-badge{font-size:12px;line-height:1.5;letter-spacing:.3px}
+body .ph-badge{padding:4px 7px}
+body .ph-distributions small,body .ph-distributions>div>div>span,body .ph-distributions b,body .ph-distributions .ph-not-present{font-size:13px;line-height:1.6}
+body .ph-transitions>span,body .ph-item-note{font-size:13px;line-height:1.65}
+body .ph-aside-heading h3{font-size:17px}
+body .ph-aside-heading>span,body .ph-recent-item>span,body .ph-recent-item small,body .ph-aside>p{font-size:13px;line-height:1.6}
+body .ph-recent-item strong{font-size:14px;white-space:normal;text-align:right}
+body .ph-recent-item{min-height:64px;padding:13px 11px}
+body .ph-explanation,body .ph-explanation summary{font-size:14px;line-height:1.75}
+body .ph-explanation summary{min-height:44px}
+body .ph-no-change,body .ph-no-change p,body .ph-start p{font-size:15px;line-height:1.7}
+body .ph-no-change b,body .ph-start h3{font-size:21px}
+body .ph-start span{font-size:14px;line-height:1.6}
+
+@media(max-width:1200px){
+ body .metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ body .overview-columns{grid-template-columns:minmax(0,1fr)}
+ body .eq-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+ body .eq-summary-ore strong{font-size:28px}
+ body .ph-items{grid-template-columns:minmax(0,1fr)}
+}
+@media(min-width:801px) and (max-width:1100px){
+ body .sidebar{width:220px;padding-left:10px;padding-right:10px}
+ body main{margin-left:220px;padding:0 24px}
+ body nav button{font-size:14px;padding-left:10px;padding-right:10px}
+ body .crumb{display:none}
+ body .header-actions{margin-left:auto}
+ body .planner-everyday{grid-template-columns:minmax(0,1fr)}
+ body .planner-helpers-check{padding-top:0}
+ body .wall-budget{grid-template-columns:minmax(0,1fr) 90px}
+ body .wall-payment{grid-column:1/-1;border-left:0;border-top:1px solid var(--line);padding:18px 0 0}
+}
+@media(max-width:800px){
+ body main{margin-left:0;padding:0 20px}
+ body .sidebar{width:100%;height:auto;padding:16px 20px;display:grid;grid-template-columns:minmax(0,1fr) minmax(160px,1.1fr);align-items:center;gap:16px;position:sticky;top:0}
+ body .sidebar:after{display:none}
+ body .sidebar nav{display:none}
+ body .mobile-navigation{display:flex;flex-direction:column;gap:5px;font-size:13px;min-width:0;line-height:1.4}
+ body .mobile-navigation select{font-size:15px;margin:0;min-height:46px;width:100%;padding:10px 9px;background:var(--panel);border-color:#615b4d}
+ body .brand{font-size:17px;gap:9px}
+ body .brand>span>span{font-size:10px;letter-spacing:3px}
+ body header{min-height:72px;padding:13px 0}
+ body .header-actions{width:100%;gap:9px;justify-content:flex-end}
+ body .header-actions .button{padding:10px 13px;font-size:14px}
+ body .save-indicator{font-size:13px}
+ body .village-switch{margin:20px 0;gap:12px}
+ body .forecast-settings{padding:17px;gap:15px}
+ body .forecast-settings label{font-size:14px}
+ body .forecast-settings label:first-child{flex:1.5}
+ body .forecast-settings>.button{font-size:14px;min-height:44px;width:auto;flex-basis:100%;padding:11px}
+ body .forecast-settings select{font-size:16px;padding:11px}
+ body .metric{padding:19px;min-height:138px}
+ body .metric-label{font-size:14px}
+ body .metric strong{font-size:30px}
+ body .metric small{font-size:13px}
+ body .hero-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+ body .section-head h2,body .walls .section-head h2{font-size:25px}
+ body .section-head p{font-size:14px}
+ body .section-head{align-items:flex-start;flex-wrap:wrap}
+ body .section-head button{font-size:14px}
+ body .eq-heading{align-items:flex-start;gap:16px}
+ body .eq-summary-progress strong{font-size:30px}
+ body .eq-heading h2{font-size:28px}
+ body .eq-hero-tabs button{font-size:14px}
+ body .wall-controls{grid-template-columns:repeat(2,minmax(0,1fr))}
+ body .wall-controls>label:first-child{grid-column:1/-1}
+ body .wall-budget{grid-template-columns:minmax(0,1fr) 90px;gap:20px}
+ body .wall-payment{grid-column:1/-1;border-left:0;border-top:1px solid var(--line);padding:18px 0 0}
+ body .ph-metrics{grid-template-columns:1fr}
+ body .ph-metric{display:grid;grid-template-columns:1fr auto;gap:6px 12px;padding:18px}
+ body .ph-metric strong{margin:0;grid-column:2;grid-row:1/3;align-self:center}
+ body .ph-metric small{grid-column:1}
+ body .ph-selector{grid-template-columns:minmax(0,1fr);gap:10px;padding:17px}
+ body .ph-selector-arrow{display:none}
+ body .ph-period{grid-column:auto;display:flex;gap:9px;justify-content:flex-start;border-left:0;border-top:1px solid var(--line);padding:13px 0 0}
+ body .ph-item h4{font-size:16px}
+ body .ph-start{padding:24px;gap:16px}
+ body .ph-start h3{font-size:21px}
+ body .ph-start p{font-size:15px}
+ body .ph-start span{font-size:14px}
+}
+@media(max-width:560px){
+ body main{padding:0 16px}
+ body .sidebar{padding:10px 16px;grid-template-columns:minmax(0,.9fr) minmax(166px,1.1fr);gap:12px}
+ body .brand{font-size:15px;gap:7px}
+ body .brand>b{width:29px;height:35px}
+ body .brand>span>span{font-size:9px;letter-spacing:2.2px}
+ body .hero{padding:20px;gap:12px;align-items:center}
+ body .hero h1{font-size:27px;line-height:1.3;margin-bottom:8px}
+ body .hero p{font-size:14px;line-height:1.6}
+ body .hero-art{position:relative;inset:auto;flex-basis:95px;width:95px;min-width:0;height:115px;opacity:1}
+ body .hero-art img{width:95px;height:110px;transform:none}
+ body .hero-pills span{font-size:13px}
+ body .hero-button{font-size:14px;min-height:44px;padding:10px 14px}
+ body .calculation-options{margin:18px 0}
+ body .calculation-options>summary{font-size:14px;padding:14px 16px}
+ body .new-content-catalog-toggle>summary{font-size:15px;padding:15px 16px}
+ body .new-content-catalog-toggle .new-content-panel{padding:15px}
+ body .mobile-navigation{font-size:12px;gap:0;position:relative}
+ body .mobile-navigation>span{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+ body .mobile-navigation select{font-size:14px;min-height:44px}
+ body .demo-banner{flex-wrap:nowrap;gap:12px;padding:12px 14px;align-items:center}
+ body .demo-banner span{min-width:0;flex:1;font-size:14px;line-height:1.5}
+ body .demo-banner button{flex:none;font-size:14px;min-height:44px;white-space:normal;max-width:115px;padding:6px 0}
+ body .save-indicator{display:none}
+ body .header-actions{justify-content:space-between}
+ body .header-actions .button{flex:1;gap:6px;padding:10px 9px}
+ body .header-actions #import-file{display:none}
+ body #snapshot-label{max-width:none;font-size:13px;text-align:left;flex-basis:100%}
+ body .segmented{width:100%}
+ body .segmented button{flex:1;font-size:14px;min-width:0;padding:10px 11px}
+ body .forecast-settings{gap:14px;padding:16px}
+ body .forecast-settings label,body .forecast-settings label:first-child{flex-basis:100%;min-width:0}
+ body .metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ body .metric{padding:16px;min-height:139px}
+ body .metric strong{font-size:28px}
+ body .metric-label,body .metric small{font-size:13px}
+ body .panel{padding:19px}
+ body .section-head h2,body .walls .section-head h2{font-size:24px}
+ body .section-kicker{font-size:12px}
+ body .category-line{gap:12px}
+ body .category-line b{font-size:14px}
+ body .category-line small{font-size:13px}
+ body .hero-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ body .mini-hero img{height:112px}
+ body .mini-hero b,body .mini-hero span{font-size:14px}
+ body .library-tools{padding:12px;gap:9px}
+ body .library-tools input{min-width:100%;font-size:16px}
+ body .library-tools select{flex-basis:100%;width:100%;max-width:100%;font-size:15px}
+ body .chip{font-size:14px;flex:1;padding:10px 9px}
+ body .cards{grid-template-columns:minmax(0,1fr);gap:12px}
+ body .unit-card{display:grid;grid-template-columns:96px minmax(0,1fr);align-items:stretch}
+ body .unit-art{height:auto;min-height:165px;padding:36px 4px 8px;overflow:hidden}
+ body .unit-art img{height:88px;width:86px;max-width:100%}
+ body .unit-quantity{top:9px;right:8px;font-size:12px;padding:3px 5px}
+ body .unit-status{top:auto;bottom:8px;left:7px;right:7px;max-width:none;font-size:10px;padding:3px;text-align:center}
+ body .unit-body{padding:17px 16px}
+ body .unit-body h3{font-size:16px;line-height:1.4}
+ body .level-line{font-size:14px}
+ body .unit-foot,body .unit-foot strong{font-size:13px}
+ body .queue-card{padding:16px}
+ body .queue-card b{font-size:15px}
+ body .queue-card p{font-size:13px}
+ body .eq-heading{flex-direction:column;align-items:stretch;gap:16px}
+ body .eq-target-label{display:block;min-width:0;width:100%;font-size:14px}
+ body .eq-target-label select{width:100%;min-width:0;margin-top:7px;font-size:16px}
+ body .eq-summary{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+ body .eq-summary>div{padding:12px}
+ body .eq-summary-progress{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 10px;align-items:center;min-height:60px}
+ body .eq-summary-progress strong{font-size:26px;grid-column:2;grid-row:1/3;margin:0;white-space:nowrap}
+ body .eq-summary-progress strong small{font-size:17px}
+ body .eq-summary-progress p{font-size:13px;margin:0;grid-column:1;line-height:1.5}
+ body .eq-summary-ore{display:grid;grid-template-columns:19px minmax(0,1fr);grid-template-rows:auto auto;gap:6px 5px;padding:11px 9px!important;align-items:center}
+ body .eq-summary-ore>div{display:contents}
+ body .eq-summary-ore>img{grid-row:2;grid-column:1;width:19px;height:20px;margin:0}
+ body .eq-summary-ore strong{grid-row:2;grid-column:2;font-size:17px;line-height:1.3;letter-spacing:-.3px;margin:0;white-space:normal;overflow-wrap:anywhere}
+ body .eq-summary-progress>span{font-size:13px;grid-column:1;line-height:1.4}
+ body .eq-summary-ore span{grid-row:1;grid-column:1/-1;font-size:13px;min-height:34px;line-height:1.3;overflow-wrap:anywhere}
+ body .eq-summary-ore small{display:none}
+ body .eq-items{grid-template-columns:minmax(0,1fr);gap:12px}
+ body .eq-card{grid-template-columns:73px minmax(0,1fr);padding:17px;min-height:148px;gap:0 14px}
+ body .eq-card-art,body .eq-card-art img{width:70px;height:73px}
+ body .eq-card-title{font-size:17px;line-height:1.4}
+ body .eq-card-level{font-size:14px}
+ body .eq-card-level>b{font-size:15px}
+ body .eq-card-level em,body .eq-ownership-status{font-size:13px}
+ body .eq-card-cost{justify-content:space-between;gap:10px}
+ body .eq-ore>b{font-size:14px}
+ body .eq-ore-label{display:none}
+ body .eq-ore img{width:20px;height:21px}
+ body .eq-search{min-width:100%}
+ body .eq-sort,body .eq-ownership{min-width:0;flex-basis:100%}
+ body .eq-sort select,body .eq-ownership select{font-size:15px}
+ body .eq-remaining{flex-basis:100%;font-size:14px}
+ body .planner-heading{padding:22px 18px 18px}
+ body .planner-heading h2{font-size:27px}
+ body .planner-heading p{font-size:14px}
+ body .planner-results{grid-template-columns:minmax(0,1fr);padding:0 18px 20px;gap:12px}
+ body .planner-summary{display:block;padding:18px}
+ body .planner-summary>span{font-size:14px}
+ body .planner-summary strong{font-size:34px;text-align:left;margin:9px 0}
+ body .planner-summary small{font-size:13px;line-height:1.6}
+ body .planner-controls{padding:0 14px 20px}
+ body .planner-control-card{padding:18px 15px}
+ body .planner-card-title{gap:11px;align-items:flex-start}
+ body .planner-card-title h3{font-size:18px}
+ body .planner-card-kicker{font-size:12px;letter-spacing:0}
+ body .planner-fields,body .planner-fields-two,body .planner-event-fields,body .planner-everyday{grid-template-columns:minmax(0,1fr);gap:20px}
+ body .planner-field{font-size:14px;gap:8px}
+ body .planner-field input,body .planner-field select{font-size:16px}
+ body .planner-field small,body .planner-check small,body .planner-help{font-size:13px}
+ body .planner-check,body .planner-weekly-check{font-size:15px;align-items:flex-start}
+ body .planner-check input{margin-top:2px}
+ body .planner-weekly-result{display:block;font-size:14px}
+ body .planner-weekly-result strong{display:block;font-size:30px;margin:8px 0}
+ body .planner-weekly-result small{display:block;font-size:13px}
+ body .planner-event>summary{font-size:14px;padding:15px 14px;gap:9px;flex-wrap:wrap}
+ body .planner-event>summary span{flex-basis:calc(100% - 34px)}
+ body .planner-event>summary b{font-size:13px;padding-left:26px}
+ body .planner-event-body{padding:0 14px 18px}
+ body .planner-breakdown{margin:0 14px 18px}
+ body .planner-method summary{padding:17px 18px}
+ body .planner-method>div{padding:0 18px 20px;font-size:14px}
+ body .wall-controls{grid-template-columns:minmax(0,1fr);padding:18px;gap:17px}
+ body .wall-controls>label:first-child{grid-column:auto}
+ body .wall-budget{padding:20px;gap:18px;grid-template-columns:minmax(0,1fr) 74px}
+ body .wall-budget-main>strong{font-size:30px;letter-spacing:-.6px}
+ body .wall-budget-main>p,body .wall-payment span{font-size:14px}
+ body .wall-target-art figcaption{font-size:12px}
+ body .wall-payment strong{font-size:25px}
+ body .wall-payment{display:grid;gap:18px}
+ body .wall-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ body .wall-stats>div{padding:16px}
+ body .wall-stats span{font-size:13px}
+ body .wall-stats strong{font-size:29px}
+ body .new-content-panel{padding:17px}
+ body .new-content-grid{grid-template-columns:minmax(0,1fr);gap:12px}
+ body .new-content-heading{flex-wrap:wrap;gap:10px}
+ body .new-content-heading h3{font-size:23px}
+ body .new-content-card[open]{grid-column:auto}
+ body .new-content-card summary{grid-template-columns:60px minmax(0,1fr) 14px;padding:17px;gap:12px}
+ body .new-content-chevron{display:block;font-size:19px}
+ body .new-content-title{font-size:16px}
+ body .new-content-th,body .new-content-english{font-size:13px}
+ body .new-content-cost>span,body .new-content-cost>.new-content-level-caption{font-size:13px}
+ body .new-content-cost strong{font-size:14px}
+ body .new-content-plan{padding:12px}
+ body .new-content-plan label{grid-template-columns:minmax(0,1fr);gap:5px}
+ body .new-content-plan select{font-size:15px}
+ body .new-content-details{padding:0 16px 17px}
+ body .new-content-details p,body .new-content-details a{font-size:14px}
+ body dialog,body #detail-dialog,body #progress-share-dialog{padding:21px 18px;max-width:calc(100vw - 24px);width:calc(100vw - 24px)}
+ body .dialog-head h2,body #detail-dialog h2{font-size:25px;line-height:1.35}
+ body .detail-object{flex-wrap:wrap;gap:16px}
+ body .detail-object .detail-art,body .detail-object-equipment .detail-art{flex-basis:100%;width:100%;padding:0}
+ body .detail-object .detail-art img,body .detail-object-equipment .detail-art img{width:125px;height:125px}
+ body .detail-level-block{flex-basis:100%}
+ body .detail-object .detail-summary{gap:25px;margin:8px 0 20px;flex-wrap:wrap}
+ body .detail-ore-totals{grid-template-columns:minmax(0,1fr);gap:13px}
+ body .detail-ore{grid-template-columns:25px minmax(0,1fr) auto}
+ body .detail-ore b{font-size:21px;white-space:normal}
+ body .detail-ore small{font-size:13px;white-space:normal;grid-column:auto}
+ body .detail-presence-choice{padding:14px}
+ body .detail-presence-choice>div{flex-direction:column}
+ body .detail-presence-choice button{width:100%;font-size:14px}
+ body .upgrade-table,body .equipment-upgrade-table{font-size:13px;table-layout:fixed}
+ body .equipment-upgrade-table thead th{font-size:12px;word-break:normal}
+ body .upgrade-table td,body .upgrade-table th,body .upgrade-table tbody th{padding:11px 4px;overflow-wrap:anywhere}
+ body .equipment-upgrade-table th img{display:block;width:24px;height:24px;margin:0 auto;object-fit:contain}
+ body .equipment-upgrade-table .ore-column-label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+ body .equipment-upgrade-table td{font-size:14px}
+ body .ph-heading h2{font-size:26px}
+ body .ph-heading p{font-size:14px}
+ body .ph-metric{grid-template-columns:minmax(0,1fr) auto;padding:17px}
+ body .ph-metric>span{font-size:14px}
+ body .ph-metric strong{font-size:30px}
+ body .ph-metric small{font-size:13px}
+ body .ph-distributions{grid-template-columns:minmax(0,1fr);gap:12px}
+ body .ph-change-arrow{display:none}
+ body .ph-distributions>div>div>span{font-size:13px}
+ body .ph-selector label{font-size:14px}
+ body .ph-selector select{font-size:15px}
+ body .ph-start{padding:21px 18px;display:block}
+ body .ph-start-icon{margin-bottom:15px}
+ body .share-actions{grid-template-columns:minmax(0,1fr)}
+ body .share-actions button:last-child{grid-column:auto}
+ body .share-tag,body .share-description{font-size:14px}
+ body footer{gap:12px}
+ body footer button{font-size:14px;margin:0 10px 0 0}
+}
+@media(max-width:360px){
+ body .sidebar{grid-template-columns:minmax(0,1fr);gap:12px}
+ body .mobile-navigation{width:100%}
+ body .metric-grid,body .eq-summary,body .wall-stats{grid-template-columns:minmax(0,1fr)}
+ body .hero-art{display:none}
+ body .header-actions{flex-wrap:wrap}
+ body .header-actions .button{flex-basis:100%}
+ body .unit-card{grid-template-columns:82px minmax(0,1fr)}
+ body .unit-body{padding:16px 12px}
+ body .eq-card{grid-template-columns:60px minmax(0,1fr);gap:0 12px;padding:15px}
+ body .eq-card-art,body .eq-card-art img{width:58px;height:66px}
+ body .wall-budget{grid-template-columns:minmax(0,1fr)}
+ body .wall-target-art{max-width:100px;justify-self:center}
+}
+@media(prefers-reduced-motion:reduce){body button,body .unit-card,body .eq-card{transition:none}}

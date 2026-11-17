@@ -20,7 +20,7 @@ function option(flag) {
 const archiveOption = option('--archive');
 const releaseArtDirectory = option('--release-art-dir');
 const output = path.resolve(option('--output') || path.join(root, '_site'));
-const publicFiles = ['art.js', 'equipment-ui.js', 'equipment.css', 'equipment-data.json', 'details-ui.js', 'details.css', 'planner-ui.js', 'planner.css', 'walls.js', 'walls.css', 'coach-engine.js', 'coach-ui.js', 'coach.css', 'coach-data.json', 'index.html', 'theme.css', 'th19-theme.css', 'new-content-ui.js', 'new-content.css', 'progress-history.js', 'progress-history.css', 'progress-share.js', 'progress-share.css', 'dashboard.js', 'engine.js', 'DATA-LICENSE.txt', 'RELEASE-ASSETS.md', '.nojekyll'];
+const publicFiles = ['art.js', 'equipment-ui.js', 'equipment.css', 'equipment-data.json', 'details-ui.js', 'details.css', 'planner-ui.js', 'planner.css', 'walls.js', 'walls.css', 'coach-engine.js', 'coach-ui.js', 'coach.css', 'coach-data.json', 'index.html', 'theme.css', 'th19-theme.css', 'readability.css', 'new-content-ui.js', 'new-content.css', 'progress-history.js', 'progress-history.css', 'progress-share.js', 'progress-share.css', 'dashboard.js', 'engine.js', 'DATA-LICENSE.txt', 'RELEASE-ASSETS.md', '.nojekyll'];
 function filesBelow(directory) {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
     const file = path.join(directory, entry.name);
