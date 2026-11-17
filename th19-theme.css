@@ -1,4 +1,5 @@
 /* TH19 — dark stone, brass and warm light. Loaded after feature styles. */
+.forecast-mode #metrics,.forecast-mode #boost-settings{display:none}.forecast-footnote{color:var(--muted);font-size:12px;line-height:1.8;margin:18px 0 24px}.forecast-footnote button{color:var(--gold);text-decoration:underline}.forecast-extra{border:1px solid var(--line);border-radius:7px;background:var(--panel);margin:22px 0}.forecast-extra>summary{padding:18px 22px;cursor:pointer;font-weight:600}.forecast-extra>div{padding:0 22px 22px}.forecast-extra .section-head{margin-top:24px}
 :root{--bg:#111110;--panel:#1b1b19;--line:#35342e;--text:#f0ece1;--muted:#a49f91;--gold:#e0b66c;--purple:#c5aa78;--green:#9abf9b;--stone:#252622;--brass:#8b724b;--ember:#d38154}
 body{background:radial-gradient(ellipse at 90% 0,#aa713712,transparent 43%),var(--bg);color:var(--text);font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased}
 button{transition:background .16s,border-color .16s,color .16s,transform .16s}

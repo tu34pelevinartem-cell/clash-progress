@@ -103,6 +103,7 @@ function normalizeBoosts(input={},base='home'){
   apprenticeLevel:home?Math.floor(bounded(input.apprenticeLevel,0,8)):0,labAssistantLevel:home?Math.floor(bounded(input.labAssistantLevel,0,12)):0,
   clockTowerLevel:home?0:Math.floor(bounded(input.clockTowerLevel,0,10)),clockTowerDaily:!home&&input.clockTowerDaily===true,
   builderPotions:home?Math.floor(bounded(input.builderPotions,0,1000)):0,researchPotions:home?Math.floor(bounded(input.researchPotions,0,1000)):0,
+  weeklyResearchPotions:home?Math.floor(bounded(input.weeklyResearchPotions,0,3)):0,
   petPotions:home?Math.floor(bounded(input.petPotions,0,1000)):0,clockPotions:home||bounded(input.clockTowerLevel,0,10)<1?0:Math.floor(bounded(input.clockPotions,0,1000))};
 }
 function helperLevels(snapshot){
@@ -185,7 +186,8 @@ function simulate(chains,count,kind,boosts,{clock=null,goldFactor=1}={}){
  const slots=assignChains(chains,count),eventEnd=boosts.eventDays*DAY,eventFactor=1-boosts.eventReduction/100;
  const helper=kind==='building'?boosts.apprenticeLevel:kind==='lab'?boosts.labAssistantLevel:0;
  const potionCount=kind==='building'?boosts.builderPotions:kind==='lab'?boosts.researchPotions:boosts.petPotions;
- const potionEnd=potionCount*HOUR,potionMultiplier=kind==='building'?10:24;
+ const potionMultiplier=kind==='building'?10:24,weeklyCount=kind==='lab'?boosts.weeklyResearchPotions||0:0,weeklyWindows=[];
+ let potionEnd=potionCount*HOUR,nextWeekly=weeklyCount?7*DAY:Infinity;
  let time=0,nextHelper=helper?0:Infinity,helperEnd=0,helperSlot=null,helperTask=null,potionWork=0,steps=0;
  function start(slot,t){
   while(!slot.current&&slot.index<slot.tasks.length){
@@ -200,6 +202,12 @@ function simulate(chains,count,kind,boosts,{clock=null,goldFactor=1}={}){
  if(clock)clock.state(0,slots.some(slot=>slot.current?.clock));
  while(slots.some(slot=>slot.current)){
   if(++steps>1000000)throw Error('Сценарий слишком большой для расчёта.');
+  if(time>=nextWeekly-EPS){
+   // Weekly purchases arrive over calendar time, never as an upfront stock.
+   // Extend an existing potion window so overlapping stock stays at 24x.
+   const start=Math.max(time,potionEnd);potionEnd=start+weeklyCount*HOUR;
+   weeklyWindows.push({start,end:potionEnd});nextWeekly+=7*DAY;
+  }
   if(helperSlot&&helperSlot.current!==helperTask){helperSlot=null;helperTask=null;}
   if(helper&&time>=nextHelper-EPS){
    helperSlot=slots.filter(slot=>slot.current).reduce((best,slot)=>!best||slot.remaining>best.remaining?slot:best,null);
@@ -208,7 +216,7 @@ function simulate(chains,count,kind,boosts,{clock=null,goldFactor=1}={}){
   const global=clock?clock.state(time,slots.some(slot=>slot.current?.clock)):{rate:1,potionExtra:0,next:Infinity};
   const usingPotion=time<potionEnd-EPS,normalRate=usingPotion?potionMultiplier:global.rate;
   const extra=usingPotion?potionMultiplier-1:global.potionExtra;
-  let next=Math.min(global.next,nextHelper>time+EPS?nextHelper:Infinity,
+  let next=Math.min(global.next,nextWeekly,nextHelper>time+EPS?nextHelper:Infinity,
    helperSlot&&helperEnd>time+EPS?helperEnd:Infinity,usingPotion?potionEnd:Infinity);
   for(const slot of slots){if(!slot.current)continue;
    const helping=slot===helperSlot&&time<helperEnd-EPS?helper:0;
@@ -226,7 +234,8 @@ function simulate(chains,count,kind,boosts,{clock=null,goldFactor=1}={}){
   time=next;
   for(const slot of slots){if(slot.current&&slot.remaining<=EPS){slot.current=null;start(slot,time);}}
  }
- return{time,potionWork};
+ const weeklyPotionsUsed=weeklyWindows.reduce((sum,window)=>sum+(time>window.start+EPS?Math.ceil((Math.min(time,window.end)-window.start-EPS)/HOUR):0),0);
+ return{time,potionWork,weeklyPotionsUsed};
 }
 function runScenario(chains,builders,boosts,base,clockUnavailable,horizon){
  const goldFactor=1-boosts.goldPass/100,clock=base==='builder'?clockController(boosts,clockUnavailable):null;
@@ -235,6 +244,7 @@ function runScenario(chains,builders,boosts,base,clockUnavailable,horizon){
  const lab=simulate(chains.lab,1,'lab',boosts,{clock:clock?clockReader(clock.windows):null,goldFactor});
  const pets=simulate(chains.pets,1,'pets',boosts,{goldFactor});
  return{building:building.time,lab:lab.time,pets:pets.time,time:Math.max(building.time,lab.time,pets.time),
+  weeklyResearchPotionsUsed:lab.weeklyPotionsUsed,
   potionWorkSaved:{building:building.potionWork,lab:lab.potionWork,pets:pets.potionWork}};
 }
 function scenario(snapshot,db,options={}){
@@ -246,7 +256,13 @@ function scenario(snapshot,db,options={}){
  const clockUnavailable=base==='builder'&&clockRow?.end?Math.max(0,(clockRow.end-now)/1000):0;
  const baseline={...described,...runScenario(chains,builders,normalizeBoosts({goldPass:normalized.goldPass},base),base,clockUnavailable,described.lab)};
  const accelerated=runScenario(chains,builders,normalized,base,clockUnavailable,baseline.lab);
- const withoutPotions=runScenario(chains,builders,{...normalized,builderPotions:0,researchPotions:0,petPotions:0,clockPotions:0},base,clockUnavailable,baseline.lab);
+ // Isolate recurring purchases from owned potions and daily help. The home
+ // laboratory has no cross-queue clock, so only its queue needs this extra run.
+ const labWithoutWeeklyResearch=normalized.weeklyResearchPotions
+  ?simulate(chains.lab,1,'lab',{...normalized,weeklyResearchPotions:0},{goldFactor:1-normalized.goldPass/100}).time
+  :accelerated.lab;
+ const weeklyResearchSavedSeconds=Math.max(0,labWithoutWeeklyResearch-accelerated.lab);
+ const withoutPotions=runScenario(chains,builders,{...normalized,builderPotions:0,researchPotions:0,weeklyResearchPotions:0,petPotions:0,clockPotions:0},base,clockUnavailable,baseline.lab);
  const queueSavings={},potionQueueSavings={};for(const key of['building','lab','pets']){
   queueSavings[key]=Math.max(0,baseline[key]-accelerated[key]);potionQueueSavings[key]=Math.max(0,withoutPotions[key]-accelerated[key]);
  }
@@ -254,19 +270,20 @@ function scenario(snapshot,db,options={}){
  const actualPercent=reference.percent,rawPotionWork=Object.values(accelerated.potionWorkSaved).reduce((sum,value)=>sum+value,0);
  const equivalentDelta=full?Math.min(100-actualPercent,rawPotionWork/full*100):0;
  const assumptions=[
-  'Все выбранные зелья используются подряд с начала сценария. Новые улучшения запускаются сразу; ресурсы и разблокировки не задерживают очередь.',
+  'Зелья из запаса используются подряд с начала сценария. Новые улучшения запускаются сразу; ресурсы и разблокировки не задерживают очередь.',
   'Каждая цепочка уровней закреплена за одним строителем. Это один возможный порядок улучшений, а не точное расписание игры.',
   'Таймеры начатых улучшений уже содержат игровые скидки. Повторно Gold Pass и скидка события к ним не применяются.',
   'Gold Pass предполагается на всём горизонте. Событие уменьшает время только улучшений, начатых до указанного срока.',
   'Эквивалент прогресса показывает дополнительную работу зелий по справочному времени. Фактический прогресс подтверждается новым JSON.'
  ];
+ if(normalized.weeklyResearchPotions)assumptions.push('Покупка '+normalized.weeklyResearchPotions+' зелий лаборатории каждые 7 дней: первая через неделю от начала прогноза. Зелья применяются подряд, пока есть исследования; непрерывное окно остаётся 24×. Будущие покупки — только сценарий, а не фактический прогресс.');
  if(normalized.apprenticeLevel||normalized.labAssistantLevel)assumptions.push('Помощники готовы в начале, работают час каждые 23 часа на одном улучшении. При досрочном завершении остаток часа не переносится; зелья не умножают их скорость.');
  if(base==='builder'&&(normalized.clockTowerDaily||normalized.clockPotions))assumptions.push('Часовая башня предполагается готовой в начале или после текущего улучшения: 10× на '+clockMinutes(normalized.clockTowerLevel)+' мин., затем 22 ч перерыва. Зелье добавляет 30 мин.; во время улучшения самой башни ускорение недоступно. Для будущих включений сохранён выбранный уровень.');
  if(!baseline.completeData)assumptions.push('Данные части уровней неполные. Срок и стоимость показывают известную часть; после улучшения с неизвестным временем сценарий цепочки не рассчитывается.');
  if(baseline.plannedObjects)assumptions.push('В прогноз добавлен ручной план новых объектов. Он хранится отдельно от JSON и не меняет фактический прогресс деревни. Уже распознанные в снимке постройки не добавляются повторно.');
  return{baseline,accelerated:{...baseline,...accelerated,percent:actualPercent},withoutPotions:{...baseline,...withoutPotions,percent:actualPercent},
   savedSeconds:Math.max(0,baseline.time-accelerated.time),potionSavedSeconds:Math.max(0,withoutPotions.time-accelerated.time),
-  queueSavings,potionQueueSavings,potionWorkSaved:accelerated.potionWorkSaved,actualPercent,projectedPercent:actualPercent+equivalentDelta,equivalentDelta,normalized,assumptions,
+  queueSavings,potionQueueSavings,potionWorkSaved:accelerated.potionWorkSaved,weeklyResearchPotionsUsed:accelerated.weeklyResearchPotionsUsed,labWithoutWeeklyResearch,weeklyResearchSavedSeconds,actualPercent,projectedPercent:actualPercent+equivalentDelta,equivalentDelta,normalized,assumptions,
   timeComplete:baseline.timeComplete,costComplete:baseline.costComplete,progressComplete:baseline.progressComplete,completeData:baseline.completeData,dataGaps:baseline.dataGaps};
 }
 return{parse,hall,entity,cap,describe,allocate,forecast,newContentRows,groups,normalizeBoosts,helperLevels,clockMinutes,scenario};})();
